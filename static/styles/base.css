@@ -1,7 +1,7 @@
 /* static/styles/base.css */
 @font-face {
-    font-family: 'Golos';
-    src: url('/static/fonts/golos.ttf');
+    font-family: 'mainfont';
+    src: url('/static/fonts/Sansation.ttf');
     /*font-weight: normal;*/
     font-style: normal;
     font-display: swap;
@@ -11,6 +11,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'mainfont';
 }
 
 a {
@@ -18,7 +19,6 @@ a {
 }
 
 body {
-    font-family: 'Golos', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #060f30;
     color: #fff;
     overflow-x: hidden;
