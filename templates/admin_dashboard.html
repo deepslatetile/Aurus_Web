@@ -1,0 +1,106 @@
+<!-- templates/admin_dashboard.html -->
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/admin_dashboard.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <div class="admin-header">
+        <h1><i class="fas fa-cog"></i> Admin Dashboard</h1>
+        <p>Flight System Management Panel</p>
+    </div>
+
+    <div class="admin-grid">
+        <!-- Bookings Management -->
+        <div class="admin-card">
+            <div class="card-icon">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+            <h3>Bookings Management</h3>
+            <p>View, manage, and process flight bookings and reservations.</p>
+            <a href="/admin/bookings" class="btn btn-primary">
+                <i class="fas fa-external-link-alt"></i> Manage Bookings
+            </a>
+        </div>
+
+        <!-- Payments Management -->
+        <div class="admin-card">
+            <div class="card-icon">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <h3>Payments Management</h3>
+            <p>Monitor transactions, process refunds, and manage payment issues.</p>
+            <a href="/admin/payments" class="btn btn-primary">
+                <i class="fas fa-external-link-alt"></i> View Payments
+            </a>
+        </div>
+
+        <!-- Flight Creation -->
+        <div class="admin-card">
+            <div class="card-icon">
+                <i class="fas fa-plane-departure"></i>
+            </div>
+            <h3>Create Flight</h3>
+            <p>Create new flight schedules and configure flight parameters.</p>
+            <a href="/admin/create_flight" class="btn btn-primary">
+                <i class="fas fa-external-link-alt"></i> Create New Flight
+            </a>
+        </div>
+
+        <!-- Flight Editing -->
+        <div class="admin-card">
+            <div class="card-icon">
+                <i class="fas fa-edit"></i>
+            </div>
+            <h3>Edit Flight</h3>
+            <p>Modify existing flight schedules and configurations.</p>
+            <div class="flight-edit-form">
+                <input type="text" id="flightNumberInput" placeholder="Enter flight number (e.g., AU1)">
+                <button onclick="goToEditFlight()" class="btn btn-secondary">
+                    <i class="fas fa-pencil-alt"></i> Edit Flight
+                </button>
+            </div>
+        </div>
+
+        <!-- Flight Configs -->
+        <div class="admin-card">
+            <div class="card-icon">
+                <i class="fas fa-sliders-h"></i>
+            </div>
+            <h3>Flight Configurations</h3>
+            <p>Manage cabin layouts, boarding styles, and service configurations.</p>
+            <a href="/admin/flight_configs" class="btn btn-primary">
+                <i class="fas fa-external-link-alt"></i> Manage Configs
+            </a>
+        </div>
+
+        <!-- Meals Management -->
+        <div class="admin-card">
+            <div class="card-icon">
+                <i class="fas fa-utensils"></i>
+            </div>
+            <h3>Meals Management</h3>
+            <p>Create and manage meal services for different flight classes.</p>
+            <a href="/admin/meals" class="btn btn-primary">
+                <i class="fas fa-external-link-alt"></i> Manage Meals
+            </a>
+        </div>
+
+        <!-- Web Configs Management -->
+        <div class="admin-card">
+            <div class="card-icon">
+                <i class="fas fa-sitemap"></i>
+            </div>
+            <h3>Navigation Management</h3>
+            <p>Manage website pages and navigation menu items.</p>
+            <a href="/admin/web_configs" class="btn btn-primary">
+                <i class="fas fa-external-link-alt"></i> Manage Navigation
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin_dashboard.js"></script>
+{% endblock %}

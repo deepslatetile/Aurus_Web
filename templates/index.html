@@ -1,0 +1,167 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/styles/index.css">
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-badge">
+            <span>✈️ Fly smarter, fly better.</span>
+        </div>
+        <h1>Welcome to <span class="brand-highlight">Aurus</span></h1>
+        <p class="hero-subtitle">Bringing technology. From people, for people</p>
+        <p class="hero-description">Experience luxury air travel with cutting-edge technology and exceptional service</p>
+
+        <div class="hero-buttons">
+            <a href="/book" class="cta-btn primary">
+                <i class="fas fa-calendar-alt"></i>
+                Book Flight
+            </a>
+            <a href="/schedule" class="cta-btn secondary">
+                <i class="fas fa-search"></i>
+                View Schedule
+            </a>
+            <a href="/profile" class="cta-btn outline">
+                <i class="fas fa-user"></i>
+                My Account
+            </a>
+        </div>
+
+        <div class="hero-stats">
+            <div class="stat">
+                <div class="stat-number">15 seconds</div>
+                <div class="stat-label">This is how long it takes to book a ticket</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Destinations</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">100+</div>
+                <div class="stat-label">Happy Passengers</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hero-visual">
+        <div class="floating-plane">
+            <i class="fas fa-plane"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="features-section">
+    <div class="section-header">
+        <h2>Why Choose Aurus?</h2>
+        <p>Discover the difference of premium air travel</p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3>Safe & Secure</h3>
+            <p>Your safety is our top priority with state-of-the-art security measures and certified aircraft
+                maintenance.</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-check"></i> Advanced safety protocols</li>
+                <li><i class="fas fa-check"></i> Certified pilots</li>
+                <li><i class="fas fa-check"></i> Real-time monitoring</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-concierge-bell"></i>
+            </div>
+            <h3>Premium Service</h3>
+            <p>Experience luxury with our exceptional in-flight services, gourmet meals, and personalized attention.</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-check"></i> Gourmet dining</li>
+                <li><i class="fas fa-check"></i> Luxury seating</li>
+                <li><i class="fas fa-check"></i> Personal concierge</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-route"></i>
+            </div>
+            <h3>Global Routes</h3>
+            <p>Fly to destinations worldwide with our extensive network and convenient flight schedules.</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-check"></i> 50+ destinations</li>
+                <li><i class="fas fa-check"></i> Flexible schedules</li>
+                <li><i class="fas fa-check"></i> Easy connections</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <h3>Modern Fleet</h3>
+            <p>Travel in comfort with our modern, fuel-efficient aircraft featuring the latest amenities.</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-check"></i> Latest aircraft</li>
+                <li><i class="fas fa-check"></i> Eco-friendly</li>
+                <li><i class="fas fa-check"></i> Advanced entertainment</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-headset"></i>
+            </div>
+            <h3>24/7 Support</h3>
+            <p>Our dedicated support team is available around the clock to assist with your travel needs.</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-check"></i> 24/7 customer service</li>
+                <li><i class="fas fa-check"></i> Multi-language support</li>
+                <li><i class="fas fa-check"></i> Quick resolution</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-tags"></i>
+            </div>
+            <h3>Best Value</h3>
+            <p>Get premium service at competitive prices with our transparent pricing and no hidden fees.</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-check"></i> Competitive pricing</li>
+                <li><i class="fas fa-check"></i> No hidden fees</li>
+                <li><i class="fas fa-check"></i> Loyalty rewards</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div class="cta-section">
+    <div class="cta-content">
+        <h2>Ready to Fly?</h2>
+        <p>Book your next journey with Aurus and experience the future of air travel today.</p>
+        <div class="cta-buttons">
+            <a href="/book" class="cta-btn primary large">
+                <i class="fas fa-plane-departure"></i>
+                Book Your Flight
+            </a>
+            <a href="/schedule" class="cta-btn outline large">
+                <i class="fas fa-search"></i>
+                Explore Flights
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/index.js"></script>
+{% endblock %}

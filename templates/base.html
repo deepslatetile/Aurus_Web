@@ -1,0 +1,60 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurus</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/styles/base.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+<header class="header">
+    <div class="container">
+        <nav class="nav-container">
+            <div class="logo">
+                <a href="/">
+                    <img class="header_img" src="/static/images/logo_white.png" alt="Aurus">
+                </a>
+            </div>
+
+            <!-- Кнопка мобильного меню -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <ul class="nav-menu" id="navMenu">
+                <!-- Navigation will be loaded dynamically -->
+            </ul>
+
+            <div class="auth-buttons" id="authButtons">
+                <!-- Auth buttons will be loaded dynamically -->
+            </div>
+
+            <!-- Выпадающее мобильное меню -->
+            <div class="mobile-dropdown" id="mobileDropdown">
+                <ul class="mobile-dropdown-menu" id="mobileDropdownMenu">
+                    <!-- Mobile navigation will be loaded dynamically -->
+                </ul>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <p>&copy; 2025 Aurus. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="/static/js/base.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
