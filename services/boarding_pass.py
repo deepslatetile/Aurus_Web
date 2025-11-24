@@ -88,10 +88,10 @@ def draw_default_boarding_pass(info):
     img = Image.open(base_image_path)
     draw = ImageDraw.Draw(img)
 
-    fontBB = ImageFont.truetype("static/fonts/golos.ttf", 216)
-    fontB = ImageFont.truetype("static/fonts/golos.ttf", 128)
-    font = ImageFont.truetype("static/fonts/golos.ttf", 64)
-    fontS = ImageFont.truetype("static/fonts/golos.ttf", 24)
+    fontBB = ImageFont.truetype("static/fonts/kja.ttf", 216)
+    fontB = ImageFont.truetype("static/fonts/kja.ttf", 128)
+    font = ImageFont.truetype("static/fonts/kja.ttf", 64)
+    fontS = ImageFont.truetype("static/fonts/kja.ttf", 24)
 
     draw.text((30, 30), info['flight_number'], fill='#fff', font=fontBB)
     draw.text((30, 300), 'Seat', fill='#fff', font=fontS)
@@ -113,7 +113,7 @@ def draw_default_boarding_pass(info):
     # Добавляем штрихкод
     barcode_data = f"{info['booking_id']}_{info['flight_number']}_{info['passenger_name']}"
     barcode_img = generate_barcode(barcode_data)
-    img.paste(barcode_img, (1075, 450))  # Левый верхний угол (1075, 450)
+    img.paste(barcode_img, (1075, 450))
 
     return img
 

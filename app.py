@@ -2,6 +2,7 @@ from flask import Flask, render_template, session, redirect, send_from_directory
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 load_dotenv()
 
