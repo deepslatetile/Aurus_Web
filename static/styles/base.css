@@ -16,7 +16,6 @@
 
 a {
     color: #fff;
-    display: flex;
 }
 
 body {
@@ -50,7 +49,7 @@ body {
 }
 
 .header_img {
-    height: 2rem;
+    height: 3rem;
     width: auto;
     max-width: 100%;
 }
