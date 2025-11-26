@@ -21,8 +21,7 @@ def auth_login():
 
         conn = sqlite3.connect('airline.db')
         c = conn.cursor()
-        
-        # Ищем пользователя по nickname (это то что в интерфейсе называется username)
+
         c.execute("SELECT * FROM users WHERE nickname = ?", (username,))
         user = c.fetchone()
 
@@ -30,24 +29,21 @@ def auth_login():
             conn.close()
             return jsonify({"error": "Invalid credentials"}), 401
 
-        # Проверяем пароль
         password_hash = hashlib.sha256(password.encode()).hexdigest()
-        if user[14] != password_hash:  # password_hash в колонке 14
+        if user[14] != password_hash:
             conn.close()
             return jsonify({"error": "Invalid credentials"}), 401
 
-        # Генерируем новый session_token
         session_token = secrets.token_hex(32)
         c.execute("UPDATE users SET session_token = ? WHERE id = ?", (session_token, user[0]))
         conn.commit()
         conn.close()
 
-        # Сохраняем информацию в сессии
         session['user_id'] = user[0]
         session['session_token'] = session_token
-        session['user_group'] = user[7]  # user_group в колонке 7
-        session['nickname'] = user[1]    # nickname в колонке 1
-        session['subgroup'] = user[8]    # subgroup в колонке 8
+        session['user_group'] = user[7]
+        session['nickname'] = user[1]
+        session['subgroup'] = user[8]
 
         response_data = {
             "message": "Login successful",
@@ -67,7 +63,6 @@ def auth_login():
 
 @auth_bp.route('/post/user', methods=['POST'])
 def create_user():
-    """Endpoint for user registration (used by frontend)"""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data received"}), 400
@@ -75,8 +70,8 @@ def create_user():
     try:
         nickname = data.get('nickname')
         password = data.get('password')
-        user_group = data.get('user_group', 'PAX')  # Default to 'PAX'
-        subgroup = data.get('subgroup', '')  # Default to empty
+        user_group = data.get('user_group', 'PAX')
+        subgroup = data.get('subgroup', '')
 
         if not nickname or not password:
             return jsonify({"error": "Nickname and password are required"}), 400
@@ -87,16 +82,13 @@ def create_user():
         conn = sqlite3.connect('airline.db')
         c = conn.cursor()
 
-        # Проверяем, не существует ли уже пользователь с таким nickname
         c.execute("SELECT id FROM users WHERE nickname = ?", (nickname,))
         if c.fetchone():
             conn.close()
             return jsonify({"error": "User with this nickname already exists"}), 409
 
-        # Хешируем пароль
         password_hash = hashlib.sha256(password.encode()).hexdigest()
 
-        # Создаем нового пользователя
         c.execute('''
             INSERT INTO users (nickname, password_hash, user_group, subgroup, session_token)
             VALUES (?, ?, ?, ?, NULL)
@@ -147,7 +139,6 @@ def auth_me():
 @auth_bp.route('/user_session', methods=['GET'])
 @login_required
 def get_user_session():
-    """Get current session data"""
     return jsonify({
         "user_id": session.get('user_id'),
         "user_group": session.get('user_group'),

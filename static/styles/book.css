@@ -1,4 +1,3 @@
-/* static/styles/book.css */
 .booking-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -79,7 +78,6 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Flight Card Styles */
 .flight-card {
     background: linear-gradient(135deg, #0d2064 0%, #113c96 100%);
     border-radius: 8px;
@@ -190,7 +188,6 @@
     /*font-weight: 600;*/
 }
 
-/* Seat Selection Styles */
 .seat-selection {
     display: grid;
     grid-template-columns: 1fr 300px;
@@ -258,7 +255,6 @@
     position: relative;
 }
 
-/* Class Colors */
 .seat.economy-class {
     background: #5facf6;
     color: white;
@@ -313,7 +309,6 @@
     margin-top: 1px;
 }
 
-/* Sidebar */
 .seatmap-sidebar {
     display: flex;
     flex-direction: column;
@@ -429,7 +424,6 @@
     text-decoration: underline;
 }
 
-/* Остальные стили */
 .flight-list {
     margin-top: 1rem;
     max-height: 400px;
@@ -746,6 +740,7 @@
     font-size: 1.3rem;
 }
 
+/* Mobile */
 @media (max-width: 768px) {
     .booking-steps {
         flex-direction: column;

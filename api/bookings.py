@@ -1,10 +1,9 @@
 from flask import Blueprint, request, jsonify, session
-
 from database import get_db
 from services.utils import login_required, generate_booking_id
 from datetime import datetime
 import sqlite3
-import json
+
 
 bookings_bp = Blueprint('bookings', __name__)
 
@@ -22,7 +21,6 @@ def get_booking(id):
         if not booking:
             return jsonify({"error": "Booking not found"}), 404
 
-        # Ensure all fields are properly converted to strings
         booking_info = {
             "id": str(booking[0]),
             "flight_number": str(booking[1]),
@@ -84,7 +82,6 @@ def create_booking():
     try:
         data = request.get_json()
 
-        # Required fields
         flight_number = data.get('flight_number')
         seat = data.get('seat')
         serve_class = data.get('serve_class')
@@ -98,7 +95,7 @@ def create_booking():
         created_at = int(datetime.now().timestamp())
         note = data.get('note', '')
         passenger_name = data['passenger_name']
-        valid = 1  # Changed from 0 to 1
+        valid = 1
         pax_service = data.get('pax_service', '')
         boarding_pass = data.get('boarding_pass', 'default')
         social_id = data.get('social_id', '')
@@ -106,7 +103,6 @@ def create_booking():
 
         db = get_db()
 
-        # Check if seat is already taken
         existing_booking = db.execute(
             'SELECT id FROM bookings WHERE flight_number = ? AND seat = ? AND valid = 1',
             (flight_number, seat)
@@ -115,7 +111,6 @@ def create_booking():
         if existing_booking:
             return jsonify({'error': 'Seat already taken'}), 400
 
-        # Insert booking
         db.execute('''
                    INSERT INTO bookings
                    (id, flight_number, created_at, user_id, seat, serve_class,

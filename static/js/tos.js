@@ -1,3 +1,4 @@
+
 async function loadPageContent() {
     try {
         const response = await fetch('/api/get/page_content/tos');
@@ -8,11 +9,9 @@ async function loadPageContent() {
 
         const pageData = await response.json();
 
-        // Update page title and metadata
         document.getElementById('pageTitle').textContent = pageData.page_display || 'Terms of Service';
         document.getElementById('lastUpdated').textContent = `Last updated: ${new Date(pageData.last_updated * 1000).toLocaleDateString()}`;
 
-        // Update content
         const contentDiv = document.getElementById('pageContent');
         if (pageData.content) {
             contentDiv.innerHTML = pageData.content;

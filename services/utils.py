@@ -2,10 +2,6 @@ from functools import wraps
 from flask import session, jsonify
 import sqlite3
 
-from functools import wraps
-from flask import session, jsonify
-import sqlite3
-
 
 def login_required(f):
     @wraps(f)
@@ -53,7 +49,6 @@ def get_current_user():
     return None
 
 def generate_booking_id():
-    """Generate random 4-character booking ID"""
     import random
     import string
     characters = string.ascii_uppercase + string.digits

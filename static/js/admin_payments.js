@@ -18,7 +18,6 @@ async function loadBookingInfo() {
         currentBooking = await response.json();
         displayBookingInfo(currentBooking);
 
-        // Auto-calculate services total
         const servicesTotal = currentBooking.pax_services.reduce((total, service) => total + (service.price || 0), 0);
         document.getElementById('paymentAmount').value = servicesTotal.toFixed(2);
         document.getElementById('paymentDescription').value = `Payment for booking ${bookingId} - Services`;
@@ -46,10 +45,8 @@ async function loadUserInfo() {
     }
 
     try {
-        // Try by virtual ID first
         let response = await fetch(`/api/get/users/virtual/${identifier}`);
         if (!response.ok) {
-            // Try by user ID
             response = await fetch(`/api/get/user/${identifier}`);
             if (!response.ok) {
                 throw new Error('User not found');
@@ -139,54 +136,6 @@ async function processUserPayment() {
     }
 
     try {
-        const response = await fetch('/api/post/transaction', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: currentUser.id,
-                amount: amount,
-                description: description,
-                type: amount > 0 ? 'payment' : 'refund'
-            })
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.error || 'Failed to process transaction');
-        }
-
-        alert('Transaction processed successfully!');
-        resetForms();
-
-    } catch (error) {
-        console.error('Transaction error:', error);
-        alert('Error processing transaction: ' + error.message);
-    }
-}
-
-async function processUserPayment() {
-    if (!currentUser) {
-        alert('Please load user first');
-        return;
-    }
-
-    const amount = parseFloat(document.getElementById('userAmount').value);
-    const description = document.getElementById('userDescription').value;
-
-    if (!amount) {
-        alert('Please enter valid amount');
-        return;
-    }
-
-    if (!description) {
-        alert('Please enter description');
-        return;
-    }
-
-    try {
         const updateData = {
             miles: (currentUser.miles || 0) + amount,
             transaction_description: description
@@ -204,7 +153,6 @@ async function processUserPayment() {
             throw new Error('Failed to process transaction');
         }
 
-        // Create transaction record
         await fetch('/api/post/transaction', {
             method: 'POST',
             headers: {
@@ -256,7 +204,6 @@ async function processMassPayment() {
         processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         processBtn.disabled = true;
 
-        // Получаем все бронирования для рейса
         const response = await fetch(`/admin/api/bookings?flight_number=${flightNumber}`);
         if (!response.ok) {
             throw new Error('Failed to load bookings');
@@ -264,7 +211,6 @@ async function processMassPayment() {
 
         const bookings = await response.json();
 
-        // Фильтруем только валидные бронирования
         const validBookings = bookings.filter(booking =>
                 booking.valid === true || booking.valid === 1
         );
@@ -282,12 +228,10 @@ async function processMassPayment() {
         let errors = 0;
         const errorDetails = [];
 
-        // Обрабатываем каждое бронирование
         for (const booking of validBookings) {
             try {
                 console.log('Processing booking:', booking.id);
 
-                // Получаем детальную информацию о бронировании для user_id
                 const bookingDetailResponse = await fetch(`/admin/api/bookings/${booking.id}`);
                 if (!bookingDetailResponse.ok) {
                     throw new Error(`Failed to get booking details for ${booking.id}`);
@@ -303,7 +247,6 @@ async function processMassPayment() {
                     continue;
                 }
 
-                // Создаем транзакцию через API
                 const transactionResponse = await fetch('/api/post/transaction', {
                     method: 'POST',
                     headers: {
@@ -336,7 +279,6 @@ async function processMassPayment() {
             }
         }
 
-        // Показываем результат
         let resultMessage = `Mass payment completed!\nProcessed: ${processed}\nErrors: ${errors}`;
 
         if (errors > 0) {
@@ -434,8 +376,6 @@ function resetForms() {
     document.getElementById('userInfo').style.display = 'none';
     currentBooking = null;
     currentUser = null;
-
-    // Clear all inputs
     document.querySelectorAll('input').forEach(input => {
         if (input.type !== 'button') input.value = '';
     });

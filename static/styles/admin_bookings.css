@@ -1,4 +1,3 @@
-/* static/styles/admin_bookings.css */
 .admin-breadcrumb {
     color: #a0b3e5;
 }
@@ -149,7 +148,6 @@
     /*font-weight: bold;*/
 }
 
-/* Staff Controls Styles */
 .staff-controls {
     margin-top: 0.5rem;
     padding-top: 0.5rem;
@@ -233,7 +231,6 @@
     border-color: #cc0000;
 }
 
-/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -536,7 +533,7 @@
     color: white;
 }
 
-/* Mobile Responsive */
+/* Mobile */
 @media (max-width: 768px) {
     .admin-panel {
         padding: 0.5rem;

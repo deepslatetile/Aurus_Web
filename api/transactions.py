@@ -7,7 +7,6 @@ transactions_bp = Blueprint('transactions', __name__)
 
 
 def check_admin_permissions():
-    """Проверка прав администратора - production ready"""
     user_id = session.get('user_id')
     if not user_id:
         return False, "Not authenticated"
@@ -24,7 +23,6 @@ def check_admin_permissions():
 
         user_group = user['user_group']
 
-        # Разрешаем только HQ и STF
         if user_group not in ['HQ', 'STF']:
             return False, f"Admin access required. Your group: {user_group}"
 
@@ -37,9 +35,6 @@ def check_admin_permissions():
 @transactions_bp.route('/post/transaction', methods=['POST'])
 @login_required
 def create_transaction():
-    """Создать новую транзакцию"""
-
-    # Проверяем права администратора
     has_permission, message = check_admin_permissions()
     if not has_permission:
         return jsonify({"error": message}), 403
@@ -57,7 +52,6 @@ def create_transaction():
         db = get_db()
         user_id = session['user_id']
 
-        # Проверяем существование пользователя
         user = db.execute(
             'SELECT id, nickname FROM users WHERE id = ?',
             (data['user_id'],)
@@ -66,7 +60,6 @@ def create_transaction():
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        # Проверяем booking_id если указан
         if data.get('booking_id'):
             booking = db.execute(
                 'SELECT id, flight_number FROM bookings WHERE id = ?',
@@ -76,12 +69,10 @@ def create_transaction():
             if not booking:
                 return jsonify({"error": "Booking not found"}), 404
 
-        # Валидация amount
         amount = data['amount']
         if not isinstance(amount, (int, float)) or abs(amount) > 1000000:  # Лимит 1M
             return jsonify({"error": "Invalid amount"}), 400
 
-        # Создаем транзакцию
         db.execute(''' \
                    INSERT INTO transactions (user_id, booking_id, amount, description, type, admin_user_id, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -97,7 +88,6 @@ def create_transaction():
 
         db.commit()
 
-        # Логируем успешное создание транзакции
         print(f"Transaction created: user_id={data['user_id']}, amount={amount}, admin={user_id}")
 
         return jsonify({
@@ -118,9 +108,7 @@ def create_transaction():
 @transactions_bp.route('/get/transactions/user/<int:user_id>', methods=['GET'])
 @login_required
 def get_user_transactions(user_id):
-    """Получить транзакции пользователя"""
     try:
-        # Проверяем права - пользователь может смотреть только свои транзакции или админ
         current_user_id = session.get('user_id')
         current_user_group = session.get('user_group')
 
@@ -162,9 +150,7 @@ def get_user_transactions(user_id):
 @transactions_bp.route('/get/transactions/booking/<booking_id>', methods=['GET'])
 @login_required
 def get_booking_transactions(booking_id):
-    """Получить транзакции по букингу"""
     try:
-        # Только админы могут смотреть транзакции по букингам
         has_permission, message = check_admin_permissions()
         if not has_permission:
             return jsonify({"error": message}), 403

@@ -2,11 +2,10 @@ from flask import Flask, render_template, session, redirect, send_from_directory
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
-# Импорт модулей
 from config import init_app
 from database import init_db, get_db
 from auth.routes import auth_bp
@@ -18,15 +17,14 @@ from api.users import users_bp
 from api.meals import meals_bp
 from api.configs import configs_bp
 from api.web_configs import web_configs_bp
-from services.boarding_pass import boarding_bp
-from admin.bookings import admin_bookings_bp
 from api.transactions import transactions_bp
 from api.flight_configs import flight_configs_bp
+from services.boarding_pass import boarding_bp
+from admin.bookings import admin_bookings_bp
 
 app = Flask(__name__)
 app = init_app(app)
 
-# Инициализация базы данных
 init_db()
 
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -255,6 +253,6 @@ def check_environment():
 
 if __name__ == '__main__':
     if check_environment():
-        app.run(debug=app.config['DEBUG'], port=app.config['PORT'], host='127.0.0.1')
+        app.run(debug=app.config['DEBUG'], port=app.config['PORT'])
     else:
         print("❌ Application cannot start due to missing configuration")

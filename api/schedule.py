@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from database import get_db
 from datetime import datetime
-import json
 import sqlite3
 from services.utils import login_required
 
@@ -103,7 +102,6 @@ def get_flight(flight_number):
 @schedule_bp.route('/post/schedule', methods=['POST'])
 @login_required
 def post_schedule():
-    # Проверка прав доступа
     db = get_db()
     admin_user = db.execute(
         'SELECT user_group FROM users WHERE id = ?',
@@ -132,7 +130,6 @@ def post_schedule():
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
-        # Проверяем существование рейса
         existing_flight = db.execute(
             'SELECT id FROM schedule WHERE flight_number = ?',
             (data['flight_number'],)
@@ -141,7 +138,6 @@ def post_schedule():
         if existing_flight:
             return jsonify({"error": "Flight with this number already exists"}), 409
 
-        # Создаем рейс
         db.execute('''
                    INSERT INTO schedule (flight_number, created_at, departure, arrival, datetime,
                                          enroute, status, seatmap, aircraft, meal, pax_service, boarding_pass_default)

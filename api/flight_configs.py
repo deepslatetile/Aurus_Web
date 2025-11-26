@@ -1,13 +1,10 @@
-# flight_configs.py
 from flask import Blueprint, request, jsonify, session
 from services.utils import login_required
 import sqlite3
 import json
 from datetime import datetime
-import os
 
 flight_configs_bp = Blueprint('flight_configs', __name__)
-
 
 @flight_configs_bp.route('/get/flight_configs/<config_type>', methods=['GET'])
 @login_required
@@ -65,8 +62,6 @@ def get_flight_configs_by_type(config_type):
 @flight_configs_bp.route('/post/flight_config', methods=['POST'])
 @login_required
 def create_flight_config():
-    """Создать новый конфиг"""
-    # Проверка прав доступа
     if session.get('user_group') not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
 
@@ -87,7 +82,6 @@ def create_flight_config():
         conn = sqlite3.connect('airline.db')
         c = conn.cursor()
 
-        # Проверяем существование конфига с таким именем и типом
         c.execute('''
                   SELECT id
                   FROM flight_configs
@@ -132,7 +126,6 @@ def create_flight_config():
 @flight_configs_bp.route('/put/flight_config/<int:config_id>', methods=['PUT'])
 @login_required
 def update_flight_config(config_id):
-    """Обновить конфиг"""
     if session.get('user_group') not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
 
@@ -154,7 +147,6 @@ def update_flight_config(config_id):
         timestamp = int(datetime.now().timestamp())
 
         if 'name' in data:
-            # Проверяем уникальность имени для этого типа
             c.execute('''
                       SELECT id
                       FROM flight_configs
@@ -202,7 +194,6 @@ def update_flight_config(config_id):
 @flight_configs_bp.route('/delete/flight_config/<int:config_id>', methods=['DELETE'])
 @login_required
 def delete_flight_config(config_id):
-    """Удалить конфиг (soft delete)"""
     if session.get('user_group') not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
 
@@ -232,7 +223,6 @@ def delete_flight_config(config_id):
 @flight_configs_bp.route('/get/flight_configs', methods=['GET'])
 @login_required
 def get_all_flight_configs():
-    """Получить все конфиги для админки"""
     if session.get('user_group') not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
 
@@ -282,9 +272,7 @@ def get_all_flight_configs():
 
 @flight_configs_bp.route('/get/boarding_styles', methods=['GET'])
 def get_boarding_styles():
-    """Получить список доступных стилей посадочных талонов"""
     try:
-        # Получаем конфиги из БД
         conn = sqlite3.connect('airline.db')
         c = conn.cursor()
 
@@ -299,10 +287,8 @@ def get_boarding_styles():
         db_styles = c.fetchall()
         conn.close()
 
-        # Формируем список стилей
         styles = []
 
-        # Добавляем default стиль
         styles.append({
             'id': 'default',
             'name': 'Default Style',
@@ -311,7 +297,6 @@ def get_boarding_styles():
             'draw_function': 'default'
         })
 
-        # Добавляем стили из БД
         for style in db_styles:
             try:
                 data = json.loads(style[3]) if style[3] else {}

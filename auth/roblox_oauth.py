@@ -5,7 +5,6 @@ import secrets
 from datetime import datetime
 from urllib.parse import urlencode
 from services.utils import login_required
-import json
 
 roblox_bp = Blueprint('roblox', __name__)
 
@@ -39,7 +38,6 @@ def auth_roblox_callback():
         if not code:
             return redirect('/profile?error=roblox_no_code')
 
-        # ВАЖНО: Проверяем, что пользователь авторизован
         if 'user_id' not in session:
             return redirect('/login?redirect=/auth/roblox')
 
@@ -276,7 +274,6 @@ def roblox_disconnect():
 
 
 def get_roblox_user_info(user_id):
-    """Helper function to get Roblox user information"""
     try:
         conn = sqlite3.connect('airline.db')
         c = conn.cursor()
@@ -315,7 +312,6 @@ def get_roblox_user_info(user_id):
 @roblox_bp.route('/api/internal/roblox_info', methods=['GET'])
 @login_required
 def internal_roblox_info():
-    """Internal API to get Roblox user information"""
     user_id = session['user_id']
     roblox_info = get_roblox_user_info(user_id)
 

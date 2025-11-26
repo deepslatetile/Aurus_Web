@@ -1,4 +1,3 @@
-/* static/styles/admin_dashboard.css */
 .admin-dashboard {
     max-width: 1200px;
     margin: 0 auto;
@@ -115,7 +114,7 @@
     color: #8fa3d8;
 }
 
-/* Mobile Responsive */
+/* Mobile */
 @media (max-width: 768px) {
     .admin-dashboard {
         padding: 0.5rem;

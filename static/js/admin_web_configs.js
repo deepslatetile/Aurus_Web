@@ -1,7 +1,7 @@
+
 let currentPages = [];
 let pageToDelete = null;
 
-// Load pages based on filter
 async function loadPages(state = '-1') {
     try {
         const container = document.getElementById('pagesList');
@@ -18,7 +18,6 @@ async function loadPages(state = '-1') {
     }
 }
 
-// Render pages list
 function renderPages() {
     const container = document.getElementById('pagesList');
 
@@ -62,7 +61,6 @@ function renderPages() {
     `).join('');
 }
 
-// Toggle page state
 async function togglePageState(pageId, currentState) {
     const newState = currentState === 1 ? 0 : 1;
     const action = newState === 1 ? 'shown' : 'hidden';
@@ -84,7 +82,6 @@ async function togglePageState(pageId, currentState) {
     }
 }
 
-// Create new page
 function createPage() {
     document.getElementById('modalTitle').textContent = 'Add New Page';
     document.getElementById('pageForm').reset();
@@ -93,7 +90,6 @@ function createPage() {
     showModal('pageModal');
 }
 
-// Edit existing page
 async function editPage(pageId) {
     try {
         const response = await fetch(`/api/get/web_config/id/${pageId}`);
@@ -114,7 +110,6 @@ async function editPage(pageId) {
     }
 }
 
-// Save page (create or update)
 async function savePage(formData) {
     const pageId = document.getElementById('pageId').value;
     const isEdit = !!pageId;
@@ -155,14 +150,12 @@ async function savePage(formData) {
     }
 }
 
-// Confirm deletion
 function confirmDelete(pageId, pageName) {
     pageToDelete = pageId;
     document.getElementById('deletePageName').textContent = pageName;
     showModal('deleteModal');
 }
 
-// Delete page
 async function deletePage() {
     if (!pageToDelete) return;
 
@@ -192,7 +185,6 @@ async function deletePage() {
     }
 }
 
-// Modal functions
 function showModal(modalId) {
     document.getElementById(modalId).style.display = 'flex';
 }
@@ -201,7 +193,6 @@ function hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
 
-// Alert function
 function showAlert(message, type) {
     const alertsContainer = document.getElementById('adminAlerts');
     const alert = document.createElement('div');
@@ -217,30 +208,20 @@ function showAlert(message, type) {
     }, 4000);
 }
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', function () {
-    // Load initial pages
     loadPages();
-
-    // Setup filter change listener
     document.getElementById('stateFilter').addEventListener('change', function () {
         loadPages(this.value);
     });
-
-    // Setup create button
     document.getElementById('createPageBtn').addEventListener('click', createPage);
-
-    // Setup form submission
     document.getElementById('pageForm').addEventListener('submit', function (e) {
         e.preventDefault();
-
         const formData = {
             page_name: document.getElementById('pageName').value.trim(),
             page_display: document.getElementById('pageDisplay').value.trim(),
             state: parseInt(document.getElementById('pageState').value)
         };
 
-        // Basic validation
         if (!formData.page_name) {
             showAlert('Please enter a page URL', 'error');
             return;
@@ -254,7 +235,6 @@ document.addEventListener('DOMContentLoaded', function () {
         savePage(formData);
     });
 
-    // Setup modal close buttons
     document.querySelectorAll('.close').forEach(closeBtn => {
         closeBtn.addEventListener('click', function () {
             const modal = this.closest('.modal');
@@ -262,7 +242,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Setup cancel buttons
     document.getElementById('cancelBtn').addEventListener('click', function () {
         hideModal('pageModal');
     });
@@ -271,10 +250,8 @@ document.addEventListener('DOMContentLoaded', function () {
         hideModal('deleteModal');
     });
 
-    // Setup delete confirmation
     document.getElementById('confirmDeleteBtn').addEventListener('click', deletePage);
 
-    // Close modal when clicking outside
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', function (e) {
             if (e.target === this) {

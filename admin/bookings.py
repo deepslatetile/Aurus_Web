@@ -1,4 +1,3 @@
-# admin/bookings.py
 from flask import Blueprint, request, jsonify, session
 from database import get_db
 import json
@@ -90,7 +89,6 @@ def get_booking_detail(booking_id):
     if not booking:
         return jsonify({'error': 'Booking not found'}), 404
 
-    # Parse PAX services if exists
     pax_services = []
     pax_service_data = booking['pax_service']
 
@@ -99,9 +97,8 @@ def get_booking_detail(booking_id):
             if isinstance(pax_service_data, str) and ',' in pax_service_data:
                 service_names = [name.strip() for name in pax_service_data.split(',')]
 
-                # Для каждого названия услуги получаем цену из таблицы pax_service
                 for service_name in service_names:
-                    if service_name:  # Проверяем что не пустая строка
+                    if service_name:
                         pax_info = db.execute(
                             'SELECT name, price FROM pax_service WHERE name = ?',
                             (service_name,)
@@ -113,13 +110,11 @@ def get_booking_detail(booking_id):
                                 'price': pax_info['price']
                             })
                         else:
-                            # Если услуга не найдена в таблице, все равно добавляем
                             pax_services.append({
                                 'name': service_name,
-                                'price': 0  # Цена по умолчанию
+                                'price': 0
                             })
 
-            # Если это одиночная услуга (без запятых)
             elif isinstance(pax_service_data, str) and pax_service_data.strip():
                 service_name = pax_service_data.strip()
                 pax_info = db.execute(
@@ -169,7 +164,6 @@ def update_booking(booking_id):
     db = get_db()
     data = request.get_json()
 
-    # Check if booking exists
     booking = db.execute(
         'SELECT id FROM bookings WHERE id = ?',
         (booking_id,)
@@ -178,7 +172,6 @@ def update_booking(booking_id):
     if not booking:
         return jsonify({'error': 'Booking not found'}), 404
 
-    # Prepare update fields
     update_fields = []
     params = []
 

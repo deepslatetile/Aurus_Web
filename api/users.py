@@ -1,6 +1,5 @@
 from datetime import datetime
 from flask import Blueprint, request, jsonify, session
-
 from database import get_db
 from services.utils import login_required
 import sqlite3
@@ -51,7 +50,6 @@ def get_user(user_id):
 @users_bp.route('/put/user/<int:user_id>', methods=['PUT'])
 @login_required
 def put_user(user_id):
-    # Проверка прав доступа - получаем user_group из базы данных
     db = get_db()
     admin_user = db.execute(
         'SELECT user_group FROM users WHERE id = ?',
@@ -95,7 +93,6 @@ def put_user(user_id):
         update_query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = ?"
         db.execute(update_query, update_values)
 
-        # Если меняются miles, создаем транзакцию
         if 'miles' in data and data['miles'] != user['miles']:
             amount_change = data['miles'] - user['miles']
             transaction_type = 'payment' if amount_change > 0 else 'refund'
@@ -123,7 +120,6 @@ def put_user(user_id):
 @users_bp.route('/delete/user/<int:user_id>', methods=['DELETE'])
 @login_required
 def delete_user(user_id):
-    # Проверка прав доступа - получаем user_group из базы данных
     db = get_db()
     admin_user = db.execute(
         'SELECT user_group FROM users WHERE id = ?',

@@ -17,20 +17,15 @@ def unix_to_readable(n):
 
 
 def generate_barcode(data, width=730, height=220):
-    """
-    Генерирует штрихкод Code128 с размерами 730x190 без текста
-    """
     try:
-        # Создаем кастомный writer без текста
         class NoTextWriter(ImageWriter):
             def _paint_text(self, xpos, ypos):
-                # Переопределяем метод отрисовки текста - ничего не делаем
                 pass
 
         writer = NoTextWriter()
         writer.set_options({
             'module_width': 0.33,
-            'module_height': height - 10,  # Оставляем немного места
+            'module_height': height - 10,
             'quiet_zone': 4,
             'background': 'white',
             'foreground': 'black',
@@ -39,30 +34,24 @@ def generate_barcode(data, width=730, height=220):
         code128 = barcode.get_barcode_class('code128')
         barcode_obj = code128(data, writer=writer)
 
-        # Сохраняем в память
         buffer = BytesIO()
         barcode_obj.write(buffer)
         buffer.seek(0)
 
-        # Открываем и ресайзим до точных размеров
         barcode_img = Image.open(buffer)
         barcode_resized = barcode_img.resize((width, height), Image.Resampling.LANCZOS)
 
         return barcode_resized
     except Exception as e:
         print(f"Barcode generation error: {e}")
-        # Возвращаем пустое изображение в случае ошибки
         return Image.new('RGB', (width, height), 'white')
 
 
 def load_style_module(style_name: str):
-    """Динамически загружает модуль стиля"""
     try:
-        # Если это default, используем встроенную функцию
         if style_name == 'default':
             return None
 
-        # Ищем файл в bp_styles
         module_path = f'bp_styles/{style_name}.py'
         if not os.path.exists(module_path):
             raise FileNotFoundError(f"Style module {module_path} not found")
@@ -78,10 +67,8 @@ def load_style_module(style_name: str):
 
 
 def draw_default_boarding_pass(info):
-    """Стандартная функция рисования посадочного талона"""
     base_image_path = f'bp_styles/default_{info["serve_class"].lower().replace(" ", "-")}.png'
 
-    # Если файл не существует, используем дефолтный
     if not os.path.exists(base_image_path):
         base_image_path = 'bp_styles/default_economy.png'
 
@@ -110,7 +97,6 @@ def draw_default_boarding_pass(info):
     draw.text((1580, 300), 'Booking ID', fill='#fff', font=fontS)
     draw.text((1580, 330), info['booking_id'], fill='#fff', font=font)
 
-    # Добавляем штрихкод
     barcode_data = f"{info['booking_id']}_{info['flight_number']}_{info['passenger_name']}"
     barcode_img = generate_barcode(barcode_data)
     img.paste(barcode_img, (1075, 450))
@@ -119,8 +105,6 @@ def draw_default_boarding_pass(info):
 
 
 def draw_boarding_pass(style, info):
-    """Основная функция рисования посадочного талона"""
-    # Если style - это ID конфига из БД (число), загружаем конфиг
     if isinstance(style, int) or (isinstance(style, str) and style.isdigit()):
         try:
             conn = sqlite3.connect('airline.db')
@@ -142,16 +126,13 @@ def draw_boarding_pass(style, info):
             print(f"Error loading boarding style config: {e}")
             style = 'default'
 
-    # Обрабатываем строковые стили
     if style == 'default':
         return draw_default_boarding_pass(info)
     else:
-        # Загружаем кастомный стиль из файла
         style_module = load_style_module(style)
         if style_module and hasattr(style_module, 'draw_boarding_pass'):
             return style_module.draw_boarding_pass(info)
         else:
-            # Fallback to default
             print(f"Style {style} not found, using default")
             return draw_default_boarding_pass(info)
 
@@ -173,12 +154,10 @@ def boarding_pass_to_pdf(image):
 
 @boarding_bp.route('/get/boarding_pass/<booking_id>/<style>', methods=['GET'])
 def get_boarding_pass(booking_id, style):
-    """Get boarding pass as PNG"""
     try:
         conn = sqlite3.connect('airline.db')
         c = conn.cursor()
 
-        # Получаем информацию о бронировании включая passenger_name
         c.execute('''
                   SELECT b.flight_number,
                          b.seat,
@@ -239,7 +218,6 @@ def get_boarding_pass(booking_id, style):
 
 @boarding_bp.route('/get/boarding_pass_pdf/<booking_id>/<style>', methods=['GET'])
 def get_boarding_pass_pdf(booking_id, style):
-    """Get boarding pass as PDF"""
     try:
         conn = sqlite3.connect('airline.db')
         c = conn.cursor()

@@ -3,7 +3,6 @@ let currentConfigs = [];
 let configToDelete = null;
 let currentFilter = 'all';
 
-// Load configs on page load
 document.addEventListener('DOMContentLoaded', function () {
     loadAllConfigs();
     setupSearch();
@@ -17,13 +16,12 @@ function setupConfigTypeHandler() {
         const boardingStyleFields = document.getElementById('boardingStyleFields');
         if (this.value === 'boarding_style') {
             boardingStyleFields.style.display = 'block';
-            // Set default JSON for boarding style
             document.getElementById('configData').value = JSON.stringify({
                 "draw_function": "default",
                 "background_image": "",
                 "background_url": "",
                 "font_size": 32,
-                "font_family": "ttocto.otf"
+                "font_family": "kja.ttf"
             }, null, 2);
         } else {
             boardingStyleFields.style.display = 'none';
@@ -31,7 +29,6 @@ function setupConfigTypeHandler() {
         }
     });
 
-    // Handle custom function selection
     const drawFunctionSelect = document.getElementById('drawFunction');
     drawFunctionSelect.addEventListener('change', function () {
         const customFunctionGroup = document.getElementById('customFunctionGroup');
@@ -203,19 +200,16 @@ function editConfig(configId) {
     document.getElementById('configData').value = JSON.stringify(config.data, null, 2);
     document.getElementById('configType').disabled = true;
 
-    // Show/hide boarding style fields
     const boardingStyleFields = document.getElementById('boardingStyleFields');
     const customFunctionGroup = document.getElementById('customFunctionGroup');
     if (config.type === 'boarding_style') {
         boardingStyleFields.style.display = 'block';
 
-        // Fill boarding style specific fields
         const drawFunction = config.data.draw_function || 'default';
         if (drawFunction === 'default') {
             document.getElementById('drawFunction').value = 'default';
             customFunctionGroup.style.display = 'none';
         } else {
-            // Check if it's a known function or custom
             const drawFunctionSelect = document.getElementById('drawFunction');
             let isKnownFunction = false;
             for (let option of drawFunctionSelect.options) {
@@ -287,7 +281,6 @@ async function saveConfig() {
         return;
     }
 
-    // For boarding styles, merge with form fields
     if (type === 'boarding_style') {
         const drawFunction = document.getElementById('drawFunction').value;
         const backgroundImage = document.getElementById('backgroundImage').value.trim();
@@ -299,12 +292,10 @@ async function saveConfig() {
             return;
         }
 
-        // Use custom function name if selected
         parsedData.draw_function = drawFunction === 'custom' ? customFunction : drawFunction;
         if (backgroundImage) parsedData.background_image = backgroundImage;
         if (backgroundUrl) parsedData.background_url = backgroundUrl;
 
-        // Validate custom function name
         if (drawFunction === 'custom' && !customFunction) {
             alert('Please enter custom function name');
             return;

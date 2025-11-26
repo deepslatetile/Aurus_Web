@@ -1,3 +1,4 @@
+
 let allMeals = [];
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -35,7 +36,6 @@ function displayMenu(meals) {
         return;
     }
 
-    // Group meals by serve_time
     const groupedMeals = {};
     meals.forEach(meal => {
         if (!groupedMeals[meal.serve_time]) {
@@ -84,17 +84,14 @@ function updateFilters() {
     const classSelect = document.getElementById('classSelect');
     const timeSelect = document.getElementById('timeSelect');
 
-    // Get unique classes and times
     const classes = [...new Set(allMeals.map(meal => meal.serve_class))];
     const times = [...new Set(allMeals.map(meal => meal.serve_time))];
 
-    // Update class filter
     classSelect.innerHTML = '<option value="all">All Classes</option>';
     classes.forEach(className => {
         classSelect.innerHTML += '<option value="' + className + '">' + className + '</option>';
     });
 
-    // Update time filter
     timeSelect.innerHTML = '<option value="all">All Times</option>';
     times.forEach(time => {
         const timeDisplay = time.charAt(0).toUpperCase() + time.slice(1);
@@ -108,12 +105,10 @@ function filterMenu() {
 
     let filteredMeals = allMeals;
 
-    // Filter by class
     if (selectedClass !== 'all') {
         filteredMeals = filteredMeals.filter(meal => meal.serve_class === selectedClass);
     }
 
-    // Filter by time
     if (selectedTime !== 'all') {
         filteredMeals = filteredMeals.filter(meal => meal.serve_time === selectedTime);
     }

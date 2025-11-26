@@ -1,4 +1,3 @@
-/* static/styles/menu.css */
 .menu-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -179,6 +178,7 @@ option {
     background-color: #0d2064;
 }
 
+/* Mobile */
 @media (max-width: 768px) {
     .menu-header h1 {
         font-size: 2rem;

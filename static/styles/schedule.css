@@ -1,4 +1,3 @@
-/* static/styles/schedule.css */
 .schedule-container {
     max-width: 1000px;
     margin: 0 auto;
@@ -154,6 +153,7 @@
     color: #a0b3e5;
 }
 
+/* Mobile */
 @media (max-width: 768px) {
     .flight-details {
         grid-template-columns: 1fr;

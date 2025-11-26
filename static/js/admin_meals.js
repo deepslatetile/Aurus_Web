@@ -1,7 +1,7 @@
+
 let currentMeals = [];
 let mealToDelete = null;
 
-// Load meals on page load
 document.addEventListener('DOMContentLoaded', function () {
     loadAllMeals();
     setupSearch();
@@ -13,7 +13,6 @@ async function loadAllMeals() {
     mealsGrid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Loading meals...</p></div>';
 
     try {
-        // Get all unique service classes from the database
         const response = await fetch('/api/get/all_meals');
         if (response.ok) {
             currentMeals = await response.json();
@@ -65,17 +64,14 @@ function updateFilters() {
     const classFilter = document.getElementById('classFilter');
     const timeFilter = document.getElementById('timeFilter');
 
-    // Get unique classes and times
     const classes = [...new Set(currentMeals.map(meal => meal.serve_class))];
     const times = [...new Set(currentMeals.map(meal => meal.serve_time))];
 
-    // Update class filter
     classFilter.innerHTML = '<option value="">All Classes</option>';
     classes.forEach(className => {
         classFilter.innerHTML += '<option value="' + className + '">' + className + '</option>';
     });
 
-    // Update time filter
     timeFilter.innerHTML = '<option value="">All Times</option>';
     times.forEach(time => {
         timeFilter.innerHTML += '<option value="' + time + '">' + time + '</option>';
@@ -130,8 +126,6 @@ function showAddMealForm() {
     document.getElementById('mealFormElement').reset();
     document.getElementById('mealId').value = '';
     document.getElementById('mealForm').style.display = 'block';
-
-    // Scroll to form
     document.getElementById('mealForm').scrollIntoView({behavior: 'smooth'});
 }
 
@@ -151,8 +145,6 @@ async function editMeal(mealId) {
     document.getElementById('description').value = meal.description || '';
     document.getElementById('image').value = meal.image || '';
     document.getElementById('mealForm').style.display = 'block';
-
-    // Scroll to form
     document.getElementById('mealForm').scrollIntoView({behavior: 'smooth'});
 }
 
@@ -170,7 +162,6 @@ async function saveMeal(event) {
         image: document.getElementById('image').value.trim() || null
     };
 
-    // Validation
     if (!mealData.serve_class || !mealData.serve_time || !mealData.name) {
         alert('Please fill in all required fields');
         return;

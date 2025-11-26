@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function() {
     const tabBtns = document.querySelectorAll('.tab-btn');
     const authForms = document.querySelectorAll('.auth-form');
@@ -47,16 +48,14 @@ async function handleLogin() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(formData),
-            credentials: 'include'  // Важно для работы с сессиями!
+            credentials: 'include'
         });
 
         const result = await response.json();
 
         if (response.ok) {
-            // Успешный логин
             showMessage('Login successful! Redirecting...', 'success');
-            
-            // Проверяем параметр redirect в URL
+
             const urlParams = new URLSearchParams(window.location.search);
             const redirectUrl = urlParams.get('redirect');
 
@@ -88,7 +87,6 @@ async function handleRegister() {
         subgroup: ''
     };
 
-    // Валидация пароля
     if (formData.password !== document.getElementById('regConfirmPassword').value) {
         showMessage('Passwords do not match!', 'error');
         return;
@@ -116,21 +114,17 @@ async function handleRegister() {
         const result = await response.json();
 
         if (response.ok) {
-            // Успешная регистрация
             showMessage('Registration successful! Please login with your new account.', 'success');
-            
-            // Переключаем на вкладку логина
+
             setTimeout(() => {
                 document.querySelector('[data-tab="login"]').click();
-                // Auto-fill username with nickname
                 document.getElementById('loginUsername').value = formData.nickname;
-                // Clear registration form
                 document.getElementById('regNickname').value = '';
                 document.getElementById('regPassword').value = '';
                 document.getElementById('regConfirmPassword').value = '';
             }, 1500);
         } else {
-            // Ошибка регистрации
+
             showMessage('Registration failed: ' + (result.error || 'Please try again'), 'error');
         }
     } catch (error) {
@@ -142,15 +136,12 @@ async function handleRegister() {
     }
 }
 
-// Функция для показа сообщений
 function showMessage(message, type) {
-    // Удаляем существующие сообщения
     const existingMessage = document.querySelector('.auth-message');
     if (existingMessage) {
         existingMessage.remove();
     }
 
-    // Создаем новое сообщение
     const messageDiv = document.createElement('div');
     messageDiv.className = `auth-message ${type}`;
     messageDiv.innerHTML = `
@@ -158,66 +149,12 @@ function showMessage(message, type) {
         ${message}
     `;
 
-    // Вставляем после auth-card
     const authCard = document.querySelector('.auth-card');
     authCard.parentNode.insertBefore(messageDiv, authCard);
 
-    // Автоматически удаляем через 5 секунд
     setTimeout(() => {
         if (messageDiv.parentNode) {
             messageDiv.remove();
         }
     }, 5000);
 }
-
-// Добавляем CSS для сообщений
-const style = document.createElement('style');
-style.textContent = `
-    .auth-message {
-        padding: 12px 16px;
-        margin: 16px 0;
-        border-radius: 8px;
-        font-weight: 500;
-        text-align: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        animation: slideDown 0.3s ease;
-    }
-    .auth-message.success {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-    .auth-message.error {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
-    }
-    .auth-message i {
-        font-size: 16px;
-    }
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    .auth-btn:disabled {
-        opacity: 0.7;
-        cursor: not-allowed;
-    }
-    .fa-spin {
-        animation: fa-spin 1s infinite linear;
-    }
-    @keyframes fa-spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-`;
-document.head.appendChild(style);

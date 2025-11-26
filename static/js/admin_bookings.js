@@ -2,7 +2,6 @@
 let currentBookingId = null;
 const modal = document.getElementById('bookingModal');
 
-// Load bookings on page load
 document.addEventListener('DOMContentLoaded', function () {
     loadBookings();
 });
@@ -99,16 +98,13 @@ function toggleBookingStatus(bookingId, status, button) {
     const statusKey = `booking_status_${bookingId}`;
     const currentStatus = localStorage.getItem(statusKey);
 
-    // Если нажата уже активная кнопка - выключаем её
     if (currentStatus === status) {
         button.classList.remove('active');
         localStorage.removeItem(statusKey);
     } else {
-        // Убираем активный класс со всех кнопок
         const buttons = button.parentElement.querySelectorAll('.status-btn');
         buttons.forEach(btn => btn.classList.remove('active'));
 
-        // Включаем нажатую кнопку
         button.classList.add('active');
         localStorage.setItem(statusKey, status);
     }
@@ -121,7 +117,6 @@ function setBookingNote(bookingId, note) {
 function displayBookingModal(booking) {
     const modalBody = document.getElementById('modalBody');
 
-    // Получаем информацию о выбранных услугах из pax_services
     const paxServices = booking.pax_services || [];
     let totalPrice = 0;
     let servicesHtml = '';
@@ -161,11 +156,9 @@ function displayBookingModal(booking) {
         `;
     }
 
-    // Generate unique storage keys for this booking
     const statusKey = `booking_status_${booking.id}`;
     const noteKey = `booking_note_${booking.id}`;
 
-    // Load saved status and note from localStorage
     const savedStatus = localStorage.getItem(statusKey);
     const savedNote = localStorage.getItem(noteKey) || '';
 
@@ -202,7 +195,6 @@ function displayBookingModal(booking) {
 
         ${servicesHtml}
 
-        <!-- Status Buttons Section -->
         <div class="status-section">
             <div class="form-group">
                 <label>Passenger Status:</label>
@@ -267,7 +259,6 @@ function displayBookingModal(booking) {
     </form>
     `;
 
-    // Initialize status buttons functionality for modal
     initializeModalStatusButtons(booking.id, savedStatus);
 
     document.getElementById('bookingForm').addEventListener('submit', saveBookingChanges);
@@ -289,17 +280,13 @@ function initializeModalStatusButtons(bookingId, savedStatus) {
             button.classList.remove('active');
             localStorage.removeItem(statusKey);
         } else {
-            // Убираем активный класс со всех кнопок
             checkedInBtn.classList.remove('active');
             boardedBtn.classList.remove('active');
-
-            // Включаем нажатую кнопку
             button.classList.add('active');
             localStorage.setItem(statusKey, status);
         }
     }
 
-    // Load saved status
     if (savedStatus) {
         if (savedStatus === 'checkedIn') {
             checkedInBtn.classList.add('active');
@@ -308,7 +295,6 @@ function initializeModalStatusButtons(bookingId, savedStatus) {
         }
     }
 
-    // Event listeners for status buttons
     checkedInBtn.addEventListener('click', () => {
         toggleModalStatus('checkedIn', checkedInBtn);
     });
@@ -317,7 +303,6 @@ function initializeModalStatusButtons(bookingId, savedStatus) {
         toggleModalStatus('boarded', boardedBtn);
     });
 
-    // Event listener for note input
     noteInput.addEventListener('input', () => {
         localStorage.setItem(noteKey, noteInput.value);
     });
@@ -380,7 +365,7 @@ async function saveBookingChanges(event) {
         }
 
         closeModal();
-        loadBookings(); // Refresh the list
+        loadBookings();
         alert('Booking updated successfully!');
 
     } catch (error) {
@@ -394,12 +379,10 @@ function closeModal() {
     currentBookingId = null;
 }
 
-// Close modal when clicking outside
 window.onclick = function (event) {
     if (event.target === modal) {
         closeModal();
     }
 }
 
-// Close modal with X button
 document.querySelector('.close').onclick = closeModal;

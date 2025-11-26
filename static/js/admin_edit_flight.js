@@ -1,16 +1,14 @@
-// Global variables to store configs
+
 let seatmaps = [];
 let boardingStyles = [];
 let availableServices = [];
 let currentFlightId = null;
 
-// Get flight ID from URL
 function getFlightIdFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('id');
 }
 
-// Load flight data
 async function loadFlightData(flightId) {
     try {
         const response = await fetch(`/api/get/schedule/${flightId}`);
@@ -27,7 +25,6 @@ async function loadFlightData(flightId) {
     }
 }
 
-// Populate form with flight data
 function populateForm(flightData) {
     document.getElementById('flightId').value = flightData.id;
     document.getElementById('flightNumber').value = flightData.flight_number;
@@ -36,24 +33,18 @@ function populateForm(flightData) {
     document.getElementById('aircraft').value = flightData.aircraft;
     document.getElementById('enroute').value = flightData.enroute;
 
-    // Convert UNIX timestamp to datetime-local format
     const date = new Date(flightData.datetime * 1000);
     const datetimeString = date.toISOString().slice(0, 16);
     document.getElementById('datetime').value = datetimeString;
 
-    // Set status (handle custom values)
     setComboValue('status', 'status_custom', flightData.status);
 
-    // Set meal (handle custom values)
     setComboValue('meal', 'meal_custom', flightData.meal);
 
-    // Set seatmap (handle custom values)
     setComboValue('seatmap', 'seatmap_custom', flightData.seatmap);
 
-    // Set boarding pass style
     document.getElementById('boarding_pass_default').value = flightData.boarding_pass_default;
 
-    // Set services
     try {
         const services = JSON.parse(flightData.pax_service || '[]');
         services.forEach(serviceName => {
@@ -67,12 +58,10 @@ function populateForm(flightData) {
     }
 }
 
-// Set combo input value (handle custom values)
 function setComboValue(selectId, customInputId, value) {
     const select = document.getElementById(selectId);
     const customInput = document.getElementById(customInputId);
 
-    // Check if value exists in select options
     let optionExists = false;
     for (let option of select.options) {
         if (option.value === value) {
@@ -91,10 +80,8 @@ function setComboValue(selectId, customInputId, value) {
     }
 }
 
-// Load configuration data
 async function loadConfigurations() {
     try {
-        // Load seatmaps
         const seatmapsResponse = await fetch('/api/get/flight_configs/cabin_layout');
         if (seatmapsResponse.ok) {
             const seatmapsData = await seatmapsResponse.json();
@@ -102,7 +89,6 @@ async function loadConfigurations() {
             populateSeatmaps();
         }
 
-        // Load boarding styles
         const boardingResponse = await fetch('/api/get/flight_configs/boarding_style');
         if (boardingResponse.ok) {
             const boardingData = await boardingResponse.json();
@@ -110,7 +96,6 @@ async function loadConfigurations() {
             populateBoardingStyles();
         }
 
-        // Load services
         const servicesResponse = await fetch('/api/get/flight_configs/service');
         if (servicesResponse.ok) {
             const servicesData = await servicesResponse.json();
@@ -193,9 +178,7 @@ function populateServices() {
     });
 }
 
-// Combo input handlers
 function setupComboInputs() {
-    // Status combo
     document.getElementById('status').addEventListener('change', function () {
         const customInput = document.getElementById('status_custom');
         if (this.value === 'custom') {
@@ -206,8 +189,6 @@ function setupComboInputs() {
             customInput.required = false;
         }
     });
-
-    // Meal combo
     document.getElementById('meal').addEventListener('change', function () {
         const customInput = document.getElementById('meal_custom');
         if (this.value === 'custom') {
@@ -217,7 +198,6 @@ function setupComboInputs() {
         }
     });
 
-    // Seatmap combo
     document.getElementById('seatmap').addEventListener('change', function () {
         const customInput = document.getElementById('seatmap_custom');
         if (this.value === 'custom') {
@@ -230,7 +210,6 @@ function setupComboInputs() {
     });
 }
 
-// Get actual value from combo inputs
 function getComboValue(selectId, customInputId) {
     const select = document.getElementById(selectId);
 
@@ -245,20 +224,17 @@ function getComboValue(selectId, customInputId) {
     return select.value;
 }
 
-// Update flight
 document.getElementById('editFlightForm').addEventListener('submit', async function (e) {
     e.preventDefault();
 
     const flightId = document.getElementById('flightId').value;
     const formData = new FormData(this);
 
-    // Get values from combo inputs
     const status = getComboValue('status', 'status_custom');
     const meal = getComboValue('meal', 'meal_custom');
     const seatmap = getComboValue('seatmap', 'seatmap_custom');
     const boardingPass = getComboValue('boarding_pass_default', 'boarding_pass_custom');
 
-    // Convert datetime to UNIX timestamp
     const departureDateTime = new Date(formData.get('datetime'));
     const datetime = Math.floor(departureDateTime.getTime() / 1000);
 
@@ -305,14 +281,12 @@ document.getElementById('editFlightForm').addEventListener('submit', async funct
     }
 });
 
-// Delete flight
 document.getElementById('deleteBtn').addEventListener('click', function () {
     const flightNumber = document.getElementById('flightNumber').value;
     document.getElementById('deleteFlightNumber').textContent = flightNumber;
     document.getElementById('deleteModal').style.display = 'flex';
 });
 
-// Delete modal handlers
 document.querySelector('#deleteModal .close').addEventListener('click', closeDeleteModal);
 document.getElementById('cancelDeleteBtn').addEventListener('click', closeDeleteModal);
 document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
@@ -352,13 +326,11 @@ async function confirmDelete() {
     }
 }
 
-// Preview flight (same as create flight)
 document.getElementById('previewBtn').addEventListener('click', function () {
     const formData = new FormData(document.getElementById('editFlightForm'));
     const previewSection = document.getElementById('previewSection');
     const previewContent = document.getElementById('flightPreview');
 
-    // Get values from combo inputs
     const status = getComboValue('status', 'status_custom');
     const meal = getComboValue('meal', 'meal_custom');
     const seatmap = getComboValue('seatmap', 'seatmap_custom');
@@ -403,7 +375,6 @@ document.getElementById('previewBtn').addEventListener('click', function () {
         </div>
     `;
 
-    // Show selected services
     const selectedServices = Array.from(document.querySelectorAll('input[name="services"]:checked'))
             .map(checkbox => {
                 const price = checkbox.getAttribute('data-price');
@@ -451,7 +422,6 @@ function showAlert(message, type) {
     alert.scrollIntoView({behavior: 'smooth', block: 'nearest'});
 }
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', function () {
     const flightId = getFlightIdFromUrl();
 

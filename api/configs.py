@@ -186,10 +186,8 @@ def delete_config(config_id):
         return jsonify({"error": "Something went wrong"}), 500
 
 
-# Новые эндпоинты для создания рейсов
 @configs_bp.route('/get/configs/seatmaps', methods=['GET'])
 def get_seatmap_configs():
-    """Get all seatmap configurations"""
     try:
         db = get_db()
 
@@ -219,7 +217,6 @@ def get_seatmap_configs():
 
 @configs_bp.route('/get/pax_services', methods=['GET'])
 def get_pax_services():
-    """Get all PAX services"""
     try:
         conn = sqlite3.connect('airline.db')
         c = conn.cursor()
@@ -256,8 +253,6 @@ def get_pax_services():
 @configs_bp.route('/post/pax_service', methods=['POST'])
 @login_required
 def create_pax_service():
-    """Create new PAX service"""
-    # Проверка прав доступа
     db = get_db()
     admin_user = db.execute(
         'SELECT user_group FROM users WHERE id = ?',

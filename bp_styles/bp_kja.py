@@ -21,20 +21,15 @@ def serve_class_to_printable(s):
 
 
 def generate_barcode(data, width=730, height=220):
-    """
-    Генерирует штрихкод Code128 с размерами 730x190 без текста
-    """
     try:
-        # Создаем кастомный writer без текста
         class NoTextWriter(ImageWriter):
             def _paint_text(self, xpos, ypos):
-                # Переопределяем метод отрисовки текста - ничего не делаем
                 pass
 
         writer = NoTextWriter()
         writer.set_options({
             'module_width': 0.33,
-            'module_height': height - 10,  # Оставляем немного места
+            'module_height': height - 10,
             'quiet_zone': 4,
             'background': 'white',
             'foreground': 'black',
@@ -43,19 +38,16 @@ def generate_barcode(data, width=730, height=220):
         code128 = barcode.get_barcode_class('code128')
         barcode_obj = code128(data, writer=writer)
 
-        # Сохраняем в память
         buffer = BytesIO()
         barcode_obj.write(buffer)
         buffer.seek(0)
 
-        # Открываем и ресайзим до точных размеров
         barcode_img = Image.open(buffer)
         barcode_resized = barcode_img.resize((width, height), Image.Resampling.LANCZOS)
 
         return barcode_resized
     except Exception as e:
         print(f"Barcode generation error: {e}")
-        # Возвращаем пустое изображение в случае ошибки
         return Image.new('RGB', (width, height), 'white')
 
 
@@ -93,9 +85,8 @@ def draw_boarding_pass(info):
     draw.text((1726, 722), str(info.get('boarding_till', '')).upper(), fill='#000', font=font)
     draw.text((1980, 252), str(info['booking_id']).upper(), fill='#000', font=fontB)
 
-    # Добавляем штрихкод
     barcode_data = f"{info['booking_id']}_{info['flight_number']}_{info['passenger_name']}"
     barcode_img = generate_barcode(barcode_data)
-    img.paste(barcode_img, (660, 190))  # Левый верхний угол (660, 190)
+    img.paste(barcode_img, (660, 190))
 
     return img

@@ -3,7 +3,6 @@ from flask import g
 import os
 
 def get_db():
-    """Получение соединения с базой данных"""
     if 'db' not in g:
         database_url = os.getenv('DATABASE_URL', 'airline.db')
         g.db = sqlite3.connect(database_url)
@@ -11,13 +10,11 @@ def get_db():
     return g.db
 
 def close_db(e=None):
-    """Закрытие соединения с базой данных"""
     db = g.pop('db', None)
     if db is not None:
         db.close()
 
 def init_db():
-    """Инициализация таблиц базы данных"""
     conn = sqlite3.connect(os.getenv('DATABASE_URL', 'airline.db'))
     cursor = conn.cursor()
 

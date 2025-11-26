@@ -1,4 +1,3 @@
-<!-- templates/admin_create_flight.html -->
 {% extends "base.html" %}
 
 {% block extra_css %}
@@ -82,9 +81,7 @@
                         <div class="combo-input-container">
                             <select id="meal" name="meal">
                                 <option value="Standard Meal Service">Standard Meal Service</option>
-                                <option value="Premium Meal Service">Premium Meal Service</option>
-                                <option value="No Meal Service">No Meal Service</option>
-                                <option value="Vegetarian Meal">Vegetarian Meal</option>
+                                <option value="Drinks Only">Drinks Only</option>
                                 <option value="custom">Custom...</option>
                             </select>
                             <input type="text" id="meal_custom" name="meal_custom"
@@ -116,7 +113,6 @@
                     </div>
                 </div>
 
-                <!-- Services Section with Create New -->
                 <div class="form-group">
                     <div class="services-header">
                         <label for="services">Available Services</label>

@@ -1,3 +1,4 @@
+
 async function loadSchedule() {
     const scheduleList = document.getElementById('scheduleList');
     scheduleList.innerHTML = '<div class="loading">Loading flight schedule...</div>';
@@ -74,8 +75,6 @@ function formatDate(date) {
     return `${day}.${month} ${hours}:${minutes}`;
 }
 
-
-// Search functionality
 function setupSearch() {
     const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', function() {

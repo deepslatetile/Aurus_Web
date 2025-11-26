@@ -1,8 +1,5 @@
 from abc import ABC, abstractmethod
 from PIL import Image, ImageDraw
-import importlib.util
-import os
-
 
 class BaseBoardingPassStyle(ABC):
     @abstractmethod

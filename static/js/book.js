@@ -1,3 +1,4 @@
+
 let bookingData = {
     selectedFlight: null,
     flightDetails: null,
@@ -34,20 +35,15 @@ async function getCurrentUser() {
     }
 }
 
-// Step navigation
 function showStep(stepNumber) {
-    // Hide all steps
     document.querySelectorAll('.booking-step').forEach(step => {
         step.classList.remove('active');
     });
-
-    // Show selected step
     const stepElement = document.getElementById('step' + stepNumber);
     if (stepElement) {
         stepElement.classList.add('active');
     }
 
-    // Update step indicators
     document.querySelectorAll('.step').forEach(step => {
         step.classList.remove('active');
     });
@@ -56,7 +52,6 @@ function showStep(stepNumber) {
         stepIndicator.classList.add('active');
     }
 
-    // Load data for specific steps
     if (stepNumber === 4) {
         loadSeatmap();
     } else if (stepNumber === 5) {
@@ -65,13 +60,11 @@ function showStep(stepNumber) {
 }
 
 function nextStep(stepNumber) {
-    // Validate current step before proceeding
     if (stepNumber === 2 && !bookingData.selectedFlight) {
         alert('Please select a flight first');
         return;
     }
     if (stepNumber === 3) {
-        // Validate passenger info
         const passengerName = document.getElementById('passengerName').value;
         const discordId = document.getElementById('discordId').value;
         const userId = document.getElementById('userId').value;
@@ -81,19 +74,16 @@ function nextStep(stepNumber) {
             return;
         }
 
-        // Store passenger info
         bookingData.passengerInfo = {
             name: passengerName,
             discordId: discordId,
             userId: userId,
             specialRequests: document.getElementById('specialRequests').value
         };
-
-        // Load services for the next step
         loadServices();
     }
     if (stepNumber === 4) {
-        // Services are optional, no validation needed
+
     }
     if (stepNumber === 5 && !bookingData.selectedSeat) {
         alert('Please select a seat first');
@@ -107,7 +97,7 @@ function prevStep(stepNumber) {
     showStep(stepNumber);
 }
 
-// Step 1: Flight Selection
+
 async function loadFlights() {
     const flightList = document.getElementById('flightList');
     if (!flightList) return;
@@ -167,7 +157,6 @@ async function loadFlights() {
             `;
         }).join('');
 
-        // Add search functionality
         const searchInput = document.getElementById('flightSearch');
         if (searchInput) {
             searchInput.addEventListener('input', function () {
@@ -188,27 +177,22 @@ async function loadFlights() {
 }
 
 function selectFlight(flightNumber) {
-    // Remove selection from all flights
     document.querySelectorAll('.flight-card').forEach(card => {
         card.classList.remove('selected');
     });
 
-    // Add selection to clicked flight
     const selectedCard = document.querySelector('.flight-card[data-flight="' + flightNumber + '"]');
     if (selectedCard) {
         selectedCard.classList.add('selected');
     }
 
-    // Enable continue button
     const selectFlightBtn = document.getElementById('selectFlightBtn');
     if (selectFlightBtn) {
         selectFlightBtn.disabled = false;
     }
 
-    // Store selected flight
     bookingData.selectedFlight = flightNumber;
 
-    // Load flight details for services and seatmap
     loadFlightDetails(flightNumber);
 }
 
@@ -221,12 +205,9 @@ async function loadFlightDetails(flightNumber) {
 
             if (flight) {
                 bookingData.flightDetails = flight;
-                // Сохраняем стиль посадочного талона из данных рейса
                 bookingData.boardingPassStyle = flight.boarding_pass_default || 'default';
                 console.log('Flight details loaded:', flight);
                 console.log('Boarding pass style:', bookingData.boardingPassStyle);
-
-                // Load existing bookings for this flight
                 await loadExistingBookings(flightNumber);
             }
         }
@@ -247,14 +228,12 @@ async function loadExistingBookings(flightNumber) {
     }
 }
 
-// Step 2: Passenger Information - Check Auth Status
 async function checkAuthStatus() {
     const user = await getCurrentUser();
     const authInfo = document.getElementById('authInfo');
 
     if (user && authInfo) {
         authInfo.style.display = 'block';
-        // Сохраняем данные пользователя для использования в бронировании
         bookingData.userInfo = user;
     } else {
         if (authInfo) {
@@ -274,13 +253,11 @@ async function loadProfileInfo() {
         if (discordId) discordId.value = user.social_id || '';
         if (userId) userId.value = user.virtual_id || '';
 
-        // Сохраняем ID пользователя
         bookingData.userId = user.id;
         bookingData.userVirtualId = user.virtual_id;
     }
 }
 
-// Step 3: Services Selection - ОБНОВЛЕННЫЙ МЕТОД
 async function loadServices() {
     const servicesList = document.getElementById('servicesList');
     if (!servicesList) return;
@@ -293,7 +270,6 @@ async function loadServices() {
             return;
         }
 
-        // Parse available services from flight details
         const servicesString = bookingData.flightDetails.pax_service;
         console.log('Services string from flight:', servicesString);
 
@@ -301,16 +277,13 @@ async function loadServices() {
 
         if (servicesString && servicesString.trim() !== '') {
             try {
-                // Try to parse as JSON array of service names
                 const serviceNames = JSON.parse(servicesString);
                 if (Array.isArray(serviceNames)) {
-                    // Загружаем реальные данные услуг из flight_configs
                     const servicesResponse = await fetch('/api/get/flight_configs/service');
                     if (servicesResponse.ok) {
                         const servicesData = await servicesResponse.json();
                         console.log('All services from config:', servicesData);
 
-                        // Сопоставляем имена услуг с реальными данными
                         availableServices = serviceNames.map(serviceName => {
                             const serviceConfig = servicesData.configs.find(config => config.name === serviceName);
                             if (serviceConfig) {
@@ -328,14 +301,12 @@ async function loadServices() {
                             }
                         });
                     } else {
-                        // Fallback если не удалось загрузить конфиги
                         availableServices = serviceNames.map(serviceName => ({
                             name: serviceName,
                             price: 0
                         }));
                     }
                 } else {
-                    // Old format - comma separated list
                     const serviceNames = servicesString.split(',').map(s => s.trim()).filter(s => s !== '');
                     availableServices = serviceNames.map(serviceName => ({
                         name: serviceName,
@@ -343,7 +314,6 @@ async function loadServices() {
                     }));
                 }
             } catch (e) {
-                // Old format - comma separated list without prices
                 const serviceNames = servicesString.split(',').map(s => s.trim()).filter(s => s !== '');
                 availableServices = serviceNames.map(serviceName => ({
                     name: serviceName,
@@ -359,7 +329,6 @@ async function loadServices() {
             return;
         }
 
-        // Display available services
         servicesList.innerHTML = availableServices.map(service => {
             const safeServiceName = service.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
 
@@ -385,7 +354,6 @@ function toggleService(serviceName, servicePrice) {
     const existingServiceIndex = bookingData.selectedServices.findIndex(s => s.name === serviceName);
 
     if (existingServiceIndex === -1) {
-        // Add service
         bookingData.selectedServices.push({
             name: serviceName,
             price: servicePrice
@@ -394,7 +362,6 @@ function toggleService(serviceName, servicePrice) {
             serviceItem.classList.add('selected');
         }
     } else {
-        // Remove service
         bookingData.selectedServices.splice(existingServiceIndex, 1);
         if (serviceItem) {
             serviceItem.classList.remove('selected');
@@ -434,7 +401,6 @@ function removeService(serviceName) {
     if (index !== -1) {
         bookingData.selectedServices.splice(index, 1);
 
-        // Update service item visual state
         const serviceItem = document.querySelector('.service-item[data-service="' + serviceName + '"]');
         if (serviceItem) {
             serviceItem.classList.remove('selected');
@@ -444,7 +410,6 @@ function removeService(serviceName) {
     }
 }
 
-// Step 4: Seat Selection
 async function loadSeatmap() {
     console.log('Loading seatmap...');
 
@@ -463,7 +428,6 @@ async function loadSeatmap() {
     seatmap.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Loading seatmap...</p></div>';
 
     try {
-        // Get seatmap config from flight details
         const seatmapConfigName = bookingData.flightDetails.seatmap;
         console.log('Loading seatmap config:', seatmapConfigName);
 
@@ -472,7 +436,6 @@ async function loadSeatmap() {
             return;
         }
 
-        // Get config by name from flight_configs
         const configResponse = await fetch('/api/get/flight_configs/cabin_layout');
         if (!configResponse.ok) {
             throw new Error('Failed to load cabin layouts');
@@ -481,7 +444,6 @@ async function loadSeatmap() {
         const configData = await configResponse.json();
         console.log('Found cabin layouts:', configData);
 
-        // Find the specific seatmap config by name
         const seatmapConfig = configData.configs.find(config => config.name === seatmapConfigName);
 
         if (!seatmapConfig) {
@@ -490,7 +452,6 @@ async function loadSeatmap() {
 
         console.log('Found seatmap config:', seatmapConfig);
 
-        // Use the data field from flight_configs
         if (seatmapConfig.data) {
             bookingData.seatmapConfig = seatmapConfig.data;
             console.log('Parsed seatmap config:', bookingData.seatmapConfig);
@@ -524,17 +485,14 @@ function renderSeatmap() {
 
     let seatmapHTML = '';
 
-    // Check if config has classes
     if (!config.classes || !Array.isArray(config.classes) || config.classes.length === 0) {
         seatmap.innerHTML = '<div class="error">No cabin classes defined in seatmap configuration</div>';
         return;
     }
 
-    // Render each cabin class
     config.classes.forEach(cabinClass => {
         seatmapHTML += '<div class="cabin-class">';
 
-        // Validate cabin class data
         if (!cabinClass.rows || !Array.isArray(cabinClass.rows) || cabinClass.rows.length < 2) {
             seatmapHTML += '<div class="error">Invalid row configuration</div></div>';
             return;
@@ -545,7 +503,6 @@ function renderSeatmap() {
             return;
         }
 
-        // Render rows for this class
         for (let row = cabinClass.rows[0]; row <= cabinClass.rows[1]; row++) {
             seatmapHTML += '<div class="seat-row">';
             seatmapHTML += '<div class="row-number">' + row + '</div>';
@@ -554,7 +511,6 @@ function renderSeatmap() {
             const aisles = cabinClass.aisles_after || [];
             const seatsPerRow = cabinClass.seat_letters.length;
 
-            // Render all seats with aisles
             for (let i = 0; i < seatsPerRow; i++) {
                 const seatLetter = cabinClass.seat_letters[i];
                 const seatId = row + seatLetter;
@@ -564,7 +520,6 @@ function renderSeatmap() {
 
                 seatmapHTML += createSeatHTML(seatId, seatLetter, seatStatus, seatClass, seatPrice);
 
-                // Add aisle after specified seat
                 if (aisles.includes(i + 1)) {
                     seatmapHTML += '<div class="aisle" title="Aisle"></div>';
                 }
@@ -594,22 +549,18 @@ function getSeatClassType(className) {
 }
 
 function getSeatPrice(seatId, cabinClass) {
-    // Check if there's a specific price for this seat
     if (cabinClass.seat_prices && cabinClass.seat_prices[seatId]) {
         return cabinClass.seat_prices[seatId];
     }
-    // Otherwise use base price for the class
     return cabinClass.base_price || 0;
 }
 
 function getSeatStatus(seatId) {
-    // Check if seat is disabled in config
     if (bookingData.seatmapConfig.disabled_seats &&
             bookingData.seatmapConfig.disabled_seats.includes(seatId)) {
         return 'disabled';
     }
 
-    // Check if seat is already booked
     if (bookingData.existingBookings &&
             bookingData.existingBookings.some(booking => booking.seat === seatId)) {
         return 'occupied';
@@ -628,28 +579,23 @@ function selectSeat(seatId, price) {
     const seatElement = document.querySelector('.seat[data-seat="' + seatId + '"]');
 
     if (!seatElement || seatElement.classList.contains('occupied') || seatElement.classList.contains('disabled')) {
-        return; // Can't select occupied or disabled seats
+        return;
     }
 
-    // Remove selection from all seats
     document.querySelectorAll('.seat').forEach(seat => {
         seat.classList.remove('selected');
     });
 
-    // Add selection to clicked seat
     seatElement.classList.add('selected');
 
-    // Enable confirm button
     const confirmSeatBtn = document.getElementById('confirmSeatBtn');
     if (confirmSeatBtn) {
         confirmSeatBtn.disabled = false;
     }
 
-    // Store selected seat and price
     bookingData.selectedSeat = seatId;
     bookingData.selectedSeatPrice = price;
 
-    // Update seat info display
     updateSeatInfo(seatId, price);
 }
 
@@ -667,7 +613,6 @@ function updateSeatInfo(seatId, price) {
     const row = parseInt(seatId.match(/\d+/)[0]);
     const seatLetter = seatId.match(/[A-Z]/)[0];
 
-    // Find cabin class for this seat
     const cabinClass = bookingData.seatmapConfig.classes.find(cls =>
             row >= cls.rows[0] && row <= cls.rows[1]
     );
@@ -681,13 +626,10 @@ function updateSeatInfo(seatId, price) {
     }
 }
 
-// Step 5: Confirmation
 function updateConfirmationSummary() {
-    // Calculate total price
     const servicesTotal = bookingData.selectedServices.reduce((total, service) => total + (service.price || 0), 0);
     const totalPrice = bookingData.selectedSeatPrice + servicesTotal;
 
-    // Flight Summary
     const flightSummary = document.getElementById('flightSummary');
     if (flightSummary && bookingData.flightDetails) {
         flightSummary.innerHTML = `
@@ -710,7 +652,6 @@ function updateConfirmationSummary() {
         `;
     }
 
-    // Passenger Summary
     const passengerSummary = document.getElementById('passengerSummary');
     if (passengerSummary) {
         const passengerName = document.getElementById('passengerName').value;
@@ -745,7 +686,6 @@ function updateConfirmationSummary() {
         passengerSummary.innerHTML = passengerHTML;
     }
 
-    // Services Summary
     const servicesSummary = document.getElementById('servicesSummary');
     if (servicesSummary) {
         if (bookingData.selectedServices.length > 0) {
@@ -760,7 +700,6 @@ function updateConfirmationSummary() {
         }
     }
 
-    // Seat Summary
     const seatSummary = document.getElementById('seatSummary');
     if (seatSummary && bookingData.selectedSeat) {
         seatSummary.innerHTML = `
@@ -779,7 +718,6 @@ function updateConfirmationSummary() {
         `;
     }
 
-    // Price Summary
     const priceSummary = document.getElementById('priceSummary');
     if (priceSummary) {
         let priceHTML = `
@@ -829,7 +767,6 @@ function getSeatClass(seatId) {
     return 'Economy';
 }
 
-// Complete Booking Function
 async function completeBooking() {
     const completeBtn = document.getElementById('completeBookingBtn');
     if (!completeBtn) return;
@@ -838,7 +775,6 @@ async function completeBooking() {
     completeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
     try {
-        // Get passenger info
         const passengerName = document.getElementById('passengerName').value;
         const discordId = document.getElementById('discordId').value;
         const userId = document.getElementById('userId').value;
@@ -859,14 +795,13 @@ async function completeBooking() {
             user_id = user.id
         }
 
-        // Prepare booking data - используем правильный стиль посадочного талона
         const bookingDataToSend = {
             flight_number: bookingData.selectedFlight,
             seat: bookingData.selectedSeat,
             serve_class: getSeatClass(bookingData.selectedSeat),
             pax_service: bookingData.selectedServices.map(s => s.name).join(', '),
             user_id: user_id,
-            boarding_pass: bookingData.boardingPassStyle, // Используем стиль из данных рейса
+            boarding_pass: bookingData.boardingPassStyle,
             note: specialRequests,
             passenger_name: passengerName,
             social_id: discordId,
@@ -876,7 +811,6 @@ async function completeBooking() {
         console.log('Sending booking data:', bookingDataToSend);
         console.log('Using boarding pass style:', bookingData.boardingPassStyle);
 
-        // Send booking request
         const response = await fetch('/api/post/booking/', {
             method: 'POST',
             headers: {
@@ -902,7 +836,6 @@ async function completeBooking() {
             console.log('Booking successful:', result);
             bookingData.bookingId = result.booking_id;
 
-            // Show success step with boarding pass
             showBoardingPassStep(result.booking_id);
         } else {
             console.error('Booking failed:', result);
@@ -913,24 +846,17 @@ async function completeBooking() {
         console.error('Booking error:', error);
         alert('Booking failed: ' + error.message);
 
-        // Reset button
         completeBtn.disabled = false;
         completeBtn.innerHTML = '<i class="fas fa-check"></i> Complete Booking';
     }
 }
 
-// Step 6: Boarding Pass Functions - ОБНОВЛЕННЫЕ МЕТОДЫ
 function showBoardingPassStep(bookingId) {
-    // Update booking ID display
     const bookingIdDisplay = document.getElementById('bookingIdDisplay');
     if (bookingIdDisplay) {
         bookingIdDisplay.textContent = bookingId;
     }
-
-    // Show boarding pass step
     showStep(6);
-
-    // Generate preview automatically
     generatePreview();
 }
 
@@ -946,7 +872,6 @@ async function generatePreview() {
     preview.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Generating preview...</p></div>';
 
     try {
-        // Используем правильный стиль посадочного талона
         const response = await fetch('/api/get/boarding_pass/' + bookingData.bookingId + '/' + bookingData.boardingPassStyle);
 
         if (response.ok) {
@@ -984,7 +909,6 @@ async function downloadBoardingPass(format) {
             throw new Error('Invalid format');
         }
 
-        // Create hidden link for download
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
@@ -1006,22 +930,18 @@ function viewMyBookings() {
     window.location.href = '/profile';
 }
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', function () {
     loadFlights();
     checkAuthStatus();
 
-    // Add click handlers for steps
     document.querySelectorAll('.step').forEach(step => {
         step.addEventListener('click', function () {
             const stepNumber = parseInt(this.getAttribute('data-step'));
             const currentStep = getCurrentStep();
 
-            // Only allow going to previous steps or next step if validation passes
             if (stepNumber <= currentStep + 1) {
                 showStep(stepNumber);
 
-                // Load specific data for steps
                 if (stepNumber === 3 && bookingData.selectedFlight) {
                     loadServices();
                 } else if (stepNumber === 4 && bookingData.selectedFlight) {

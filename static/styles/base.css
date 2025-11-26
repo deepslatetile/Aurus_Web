@@ -1,4 +1,3 @@
-/* static/styles/base.css */
 @font-face {
     font-family: 'mainfont';
     src: url('/static/fonts/Sansation.ttf');
@@ -153,6 +152,14 @@ body {
     width: 100%;
 }
 
+.footer-links {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    flex-wrap: wrap;
+    align-content: center;
+}
+
 .alert {
     padding: 1rem;
     margin: 1rem 0;
@@ -170,7 +177,6 @@ body {
     color: white;
 }
 
-/* Mobile Menu Styles */
 .mobile-menu-toggle {
     display: none;
     background: none;
@@ -223,7 +229,7 @@ body {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Mobile Styles */
+/* Mobile */
 @media (max-width: 768px) {
     .nav-container {
         flex-direction: row;

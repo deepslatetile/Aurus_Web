@@ -5,7 +5,6 @@ import secrets
 from datetime import datetime
 from urllib.parse import urlencode
 from services.utils import login_required
-import json
 
 discord_bp = Blueprint('discord', __name__)
 
@@ -39,7 +38,6 @@ def auth_discord_callback():
         if not code:
             return redirect('/profile?error=discord_no_code')
 
-        # ВАЖНО: Проверяем, что пользователь авторизован
         if 'user_id' not in session:
             return redirect('/login?redirect=/auth/discord')
 
@@ -123,7 +121,6 @@ def auth_discord_callback():
                           int(datetime.now().timestamp())
                       ))
 
-        # ОБНОВЛЯЕМ social_id в таблице users
         c.execute('''
                   UPDATE users
                   SET social_id = ?
@@ -179,7 +176,6 @@ def discord_connection():
                         AND provider = 'discord'
                       ''', (user_id,))
 
-            # ОЧИЩАЕМ social_id при отвязке Discord
             c.execute('''
                       UPDATE users 
                       SET social_id = NULL 
@@ -265,7 +261,6 @@ def discord_disconnect():
                     AND provider = 'discord'
                   ''', (user_id,))
 
-        # ОЧИЩАЕМ social_id при отключении Discord
         c.execute('''
                   UPDATE users 
                   SET social_id = 0 
