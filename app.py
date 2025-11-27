@@ -19,6 +19,7 @@ from api.configs import configs_bp
 from api.web_configs import web_configs_bp
 from api.transactions import transactions_bp
 from api.flight_configs import flight_configs_bp
+from api.notifications import notifications_bp
 from services.boarding_pass import boarding_bp
 from admin.admin_bookings import admin_bookings_bp
 from admin.admin_weather import admin_weather_bp
@@ -44,7 +45,7 @@ app.register_blueprint(flight_configs_bp, url_prefix='/api')
 app.register_blueprint(admin_bookings_bp, url_prefix='/admin/api')
 app.register_blueprint(admin_weather_bp, url_prefix='/admin/api')
 app.register_blueprint(admin_users_bp, url_prefix='/admin/api')
-
+app.register_blueprint(notifications_bp, url_prefix='/api')
 
 @app.route('/static/fonts/<path:filename>')
 def serve_fonts(filename):
@@ -314,6 +315,6 @@ def check_environment():
 
 if __name__ == '__main__':
     if check_environment():
-        app.run(debug=app.config['DEBUG'], port=app.config['PORT'])
+        app.run(debug=app.config['DEBUG'], port=app.config['PORT'], host='0.0.0.0')
     else:
         print("❌ Application cannot start due to missing configuration")

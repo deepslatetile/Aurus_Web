@@ -136,6 +136,57 @@ body {
     white-space: nowrap;
 }
 
+/* Стили для кнопки уведомлений */
+.notification-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.notification-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.notification-btn.active {
+    color: #5facf6;
+}
+
+.notification-btn .bell-icon {
+    font-size: 1.2rem;
+}
+
+.notification-btn .status-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ff4444;
+    display: none;
+}
+
+.notification-btn.subscribed .status-dot {
+    display: block;
+    background-color: #00C851;
+}
+
+.auth-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .main-content {
     padding: 2rem 0;
     min-height: calc(100vh - 120px);
@@ -272,6 +323,15 @@ body {
     .user-info span {
         font-size: 0.8rem;
     }
+
+    .notification-btn {
+        width: 35px;
+        height: 35px;
+    }
+
+    .notification-btn .bell-icon {
+        font-size: 1rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -301,6 +361,20 @@ body {
         padding: 0.6rem 0.8rem;
         font-size: 0.9rem;
     }
+
+    .auth-section {
+        gap: 0.3rem;
+    }
+
+    .notification-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0.3rem;
+    }
+
+    .notification-btn .bell-icon {
+        font-size: 0.9rem;
+    }
 }
 
 @media (max-width: 320px) {
@@ -319,5 +393,14 @@ body {
     .login-btn, .logout-btn, .profile-btn {
         padding: 0.3rem 0.6rem;
         font-size: 0.7rem;
+    }
+
+    .notification-btn {
+        width: 30px;
+        height: 30px;
+    }
+
+    .notification-btn .bell-icon {
+        font-size: 0.8rem;
     }
 }
