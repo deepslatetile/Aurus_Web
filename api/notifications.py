@@ -1,4 +1,3 @@
-# notifications.py
 import json
 import time
 from flask import Blueprint, request, jsonify
@@ -17,7 +16,7 @@ class NotificationManager:
         self.vapid_private_key = os.getenv('VAPID_PRIVATE_KEY', '')
         self.vapid_public_key = os.getenv('VAPID_PUBLIC_KEY', '')
         self.vapid_claims = {
-            "sub": "mailto:your-email@example.com"  # Замени на свою почту
+            "sub": "mailto:deepslatework@mail.ru"
         }
 
     def save_subscription(self, subscription_data, user_id=None):
@@ -209,7 +208,7 @@ def push_send():
         title = data.get('title', 'Уведомление')
         body = data.get('body', '')
         url = data.get('url')
-        user_id = data.get('user_id')  # Если None - отправляем всем
+        user_id = data.get('user_id')
 
         if user_id:
             results = notification_manager.send_to_user(user_id, title, body, url)
