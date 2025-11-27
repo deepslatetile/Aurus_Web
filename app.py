@@ -313,6 +313,23 @@ def admin_users():
     return render_template('admin_users.html')
 
 
+@app.route('/admin/notifications')
+def admin_notifications():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    db = get_db()
+    user = db.execute(
+        'SELECT user_group FROM users WHERE id = ?',
+        (session['user_id'],)
+    ).fetchone()
+
+    if not user or user['user_group'] not in ['HQ', 'STF']:
+        return redirect('/')
+
+    return render_template('admin_notifications.html')
+
+
 def check_environment():
     # TODO
     return True

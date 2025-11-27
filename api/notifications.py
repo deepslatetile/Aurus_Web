@@ -1,245 +1,274 @@
-import json
-import time
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from database import get_db
-import jwt
-import requests
-from base64 import urlsafe_b64encode
-import os
+import time
+from services.firebase_admin import FirebaseAdmin
 
-# Создаем blueprint для уведомлений
 notifications_bp = Blueprint('notifications', __name__)
 
 
-class NotificationManager:
-    def __init__(self):
-        self.vapid_private_key = os.getenv('VAPID_PRIVATE_KEY', '')
-        self.vapid_public_key = os.getenv('VAPID_PUBLIC_KEY', '')
-        self.vapid_claims = {
-            "sub": "mailto:deepslatework@mail.ru"
-        }
-
-    def save_subscription(self, subscription_data, user_id=None):
-        """Сохраняет подписку в БД"""
-        db = get_db()
-
-        subscription = json.loads(subscription_data) if isinstance(subscription_data, str) else subscription_data
-
-        try:
-            db.execute('''
-                INSERT OR REPLACE INTO push_subscriptions 
-                (user_id, endpoint, p256dh, auth, created_at) 
-                VALUES (?, ?, ?, ?, ?)
-            ''', (
-                user_id,
-                subscription['endpoint'],
-                subscription['keys']['p256dh'],
-                subscription['keys']['auth'],
-                int(time.time())
-            ))
-            db.commit()
-            return True
-        except Exception as e:
-            print(f"Error saving subscription: {e}")
-            return False
-
-    def get_user_subscriptions(self, user_id):
-        """Получает подписки пользователя"""
-        db = get_db()
-        cursor = db.execute('''
-                            SELECT endpoint, p256dh, auth
-                            FROM push_subscriptions
-                            WHERE user_id = ?
-                            ''', (user_id,))
-
-        subscriptions = []
-        for row in cursor.fetchall():
-            subscriptions.append({
-                'endpoint': row['endpoint'],
-                'keys': {
-                    'p256dh': row['p256dh'],
-                    'auth': row['auth']
-                }
-            })
-        return subscriptions
-
-    def get_all_subscriptions(self):
-        """Получает все подписки"""
-        db = get_db()
-        cursor = db.execute('''
-                            SELECT endpoint, p256dh, auth, user_id
-                            FROM push_subscriptions
-                            ''')
-
-        subscriptions = []
-        for row in cursor.fetchall():
-            subscriptions.append({
-                'endpoint': row['endpoint'],
-                'keys': {
-                    'p256dh': row['p256dh'],
-                    'auth': row['auth']
-                },
-                'user_id': row['user_id']
-            })
-        return subscriptions
-
-    def delete_subscription(self, endpoint):
-        """Удаляет подписку"""
-        db = get_db()
-        db.execute('DELETE FROM push_subscriptions WHERE endpoint = ?', (endpoint,))
-        db.commit()
-
-    def send_push_notification(self, subscription, title, body, url=None, icon=None):
-        """Отправляет push-уведомление"""
-        try:
-            # Подготовка payload
-            payload = {
-                'title': title,
-                'body': body,
-                'icon': icon or '/static/icons/icon-192x192.png',
-                'url': url or '/'
-            }
-
-            # Создание JWT токена
-            expiration = int(time.time()) + 43200  # 12 часов
-            jwt_payload = {
-                "aud": "https://fcm.googleapis.com",
-                "exp": expiration,
-                "sub": self.vapid_claims["sub"]
-            }
-
-            jwt_token = jwt.encode(jwt_payload, self.vapid_private_key, algorithm="ES256")
-            if isinstance(jwt_token, bytes):
-                jwt_token = jwt_token.decode('utf-8')
-
-            # Заголовки
-            headers = {
-                'Authorization': f'vapid t={jwt_token}, k={self.vapid_public_key}',
-                'Content-Type': 'application/json',
-                'TTL': '86400'
-            }
-
-            # Отправка
-            response = requests.post(
-                subscription['endpoint'],
-                headers=headers,
-                data=json.dumps(payload),
-                timeout=10
-            )
-
-            return response.status_code == 201
-
-        except Exception as e:
-            print(f"Error sending push notification: {e}")
-            return False
-
-    def send_to_user(self, user_id, title, body, url=None):
-        """Отправляет уведомление конкретному пользователю"""
-        subscriptions = self.get_user_subscriptions(user_id)
-        results = []
-
-        for subscription in subscriptions:
-            success = self.send_push_notification(subscription, title, body, url)
-            results.append({'endpoint': subscription['endpoint'], 'success': success})
-
-        return results
-
-    def broadcast(self, title, body, url=None):
-        """Отправляет уведомление всем подписчикам"""
-        subscriptions = self.get_all_subscriptions()
-        results = []
-
-        for subscription in subscriptions:
-            success = self.send_push_notification(subscription, title, body, url)
-            results.append({'endpoint': subscription['endpoint'], 'success': success})
-
-        return results
-
-
-# Создаем глобальный экземпляр
-notification_manager = NotificationManager()
-
-
-# Эндпоинты для уведомлений
 @notifications_bp.route('/push/subscribe', methods=['POST'])
 def push_subscribe():
-    """Сохраняет подписку пользователя"""
     try:
-        data = request.json
-        subscription = data.get('subscription')
-        user_id = data.get('user_id')  # Опционально
+        data = request.get_json()
+        token = data.get('token')
+        user_id = data.get('user_id')
 
-        if not subscription:
-            return jsonify({'error': 'Subscription data required'}), 400
+        if not token:
+            return jsonify({'error': 'Token is required'}), 400
 
-        success = notification_manager.save_subscription(subscription, user_id)
+        db = get_db()
 
-        if success:
-            return jsonify({'status': 'success', 'message': 'Subscribed to push notifications'})
-        else:
-            return jsonify({'error': 'Failed to save subscription'}), 500
+        # Если пользователь авторизован в сессии, используем его ID
+        if 'user_id' in session and not user_id:
+            user_id = session['user_id']
+
+        # Проверяем, существует ли уже токен
+        existing = db.execute(
+            'SELECT id FROM push_subscriptions WHERE fcm_token = ?',
+            (token,)
+        ).fetchone()
+
+        if existing:
+            return jsonify({'message': 'Token already exists'}), 200
+
+        # Сохраняем токен
+        db.execute(
+            '''INSERT INTO push_subscriptions
+                   (user_id, fcm_token, created_at)
+               VALUES (?, ?, ?)''',
+            (user_id, token, int(time.time()))
+        )
+        db.commit()
+
+        # Подписываем на общие темы
+        try:
+            FirebaseAdmin.subscribe_to_topic([token], 'all_users')
+            if user_id:
+                FirebaseAdmin.subscribe_to_topic([token], f'user_{user_id}')
+        except Exception as e:
+            print(f"Topic subscription warning: {e}")
+
+        return jsonify({'message': 'Token saved successfully'}), 200
 
     except Exception as e:
+        print(f"Error in push_subscribe: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @notifications_bp.route('/push/unsubscribe', methods=['POST'])
 def push_unsubscribe():
-    """Удаляет подписку"""
     try:
-        data = request.json
-        endpoint = data.get('endpoint')
+        data = request.get_json()
+        token = data.get('token')
 
-        if not endpoint:
-            return jsonify({'error': 'Endpoint required'}), 400
+        if not token:
+            return jsonify({'error': 'Token is required'}), 400
 
-        notification_manager.delete_subscription(endpoint)
-        return jsonify({'status': 'success', 'message': 'Unsubscribed'})
+        db = get_db()
+
+        # Отписываем от тем перед удалением
+        try:
+            subscription = db.execute(
+                'SELECT user_id FROM push_subscriptions WHERE fcm_token = ?',
+                (token,)
+            ).fetchone()
+
+            if subscription:
+                user_id = subscription['user_id']
+                FirebaseAdmin.unsubscribe_from_topic([token], 'all_users')
+                if user_id:
+                    FirebaseAdmin.unsubscribe_from_topic([token], f'user_{user_id}')
+        except Exception as e:
+            print(f"Topic unsubscription warning: {e}")
+
+        db.execute(
+            'DELETE FROM push_subscriptions WHERE fcm_token = ?',
+            (token,)
+        )
+        db.commit()
+
+        return jsonify({'message': 'Token removed successfully'}), 200
 
     except Exception as e:
+        print(f"Error in push_unsubscribe: {e}")
         return jsonify({'error': str(e)}), 500
 
 
-@notifications_bp.route('/push/send', methods=['POST'])
-def push_send():
-    """Отправляет уведомление (для админов)"""
+@notifications_bp.route('/push/tokens', methods=['GET'])
+def get_user_tokens():
     try:
-        data = request.json
-        title = data.get('title', 'Уведомление')
-        body = data.get('body', '')
-        url = data.get('url')
-        user_id = data.get('user_id')
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
 
-        if user_id:
-            results = notification_manager.send_to_user(user_id, title, body, url)
-        else:
-            results = notification_manager.broadcast(title, body, url)
+        db = get_db()
+
+        tokens = db.execute(
+            'SELECT fcm_token, created_at FROM push_subscriptions WHERE user_id = ?',
+            (session['user_id'],)
+        ).fetchall()
 
         return jsonify({
-            'status': 'success',
-            'message': f'Sent {len(results)} notifications',
-            'results': results
-        })
+            'tokens': [dict(token) for token in tokens]
+        }), 200
 
     except Exception as e:
+        print(f"Error in get_user_tokens: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @notifications_bp.route('/push/test', methods=['POST'])
-def push_test():
-    """Тестовое уведомление"""
+def send_test_notification():
     try:
-        results = notification_manager.broadcast(
-            'Тест PWA',
-            'Привет! Это тестовое уведомление от твоего приложения! 🎉',
-            '/'
-        )
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        data = request.get_json()
+        test_type = data.get('type', 'personal')  # personal, broadcast
+
+        title = "🧪 Тестовое уведомление"
+        body = f"Это тестовое уведомление от Aurus. Время: {time.strftime('%H:%M:%S')}"
+
+        if test_type == 'personal':
+            # Отправляем текущему пользователю
+            result = FirebaseAdmin.send_to_user(
+                session['user_id'],
+                title,
+                body,
+                data={'url': '/', 'type': 'test'}
+            )
+            message = "Тестовое уведомление отправлено вам"
+
+        elif test_type == 'broadcast':
+            # Отправляем всем пользователям (только для админов)
+            db = get_db()
+            user = db.execute(
+                'SELECT user_group FROM users WHERE id = ?',
+                (session['user_id'],)
+            ).fetchone()
+
+            if not user or user['user_group'] not in ['HQ', 'STF']:
+                return jsonify({'error': 'Admin access required'}), 403
+
+            result = FirebaseAdmin.send_broadcast(
+                title,
+                body,
+                data={'url': '/', 'type': 'test_broadcast'}
+            )
+            message = f"Тестовое уведомление отправлено всем пользователям ({len(result) if result else 0} получателей)"
+
+        else:
+            return jsonify({'error': 'Invalid test type'}), 400
 
         return jsonify({
-            'status': 'success',
-            'message': f'Test notification sent to {len(results)} subscribers',
-            'results': results
-        })
+            'message': message,
+            'result': result
+        }), 200
 
     except Exception as e:
+        print(f"Error in send_test_notification: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@notifications_bp.route('/push/send', methods=['POST'])
+def send_custom_notification():
+    try:
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        # Проверяем права админа
+        db = get_db()
+        user = db.execute(
+            'SELECT user_group FROM users WHERE id = ?',
+            (session['user_id'],)
+        ).fetchone()
+
+        if not user or user['user_group'] not in ['HQ', 'STF']:
+            return jsonify({'error': 'Admin access required'}), 403
+
+        data = request.get_json()
+        title = data.get('title')
+        body = data.get('body')
+        target = data.get('target', 'all')  # all, user, topic
+        target_id = data.get('target_id')
+        url = data.get('url', '/')
+
+        if not title or not body:
+            return jsonify({'error': 'Title and body are required'}), 400
+
+        notification_data = {
+            'url': url,
+            'type': 'custom',
+            'sent_by': str(session['user_id']),
+            'timestamp': str(int(time.time()))
+        }
+
+        if target == 'all':
+            result = FirebaseAdmin.send_broadcast(title, body, notification_data)
+            message = f"Уведомление отправлено всем пользователям"
+
+        elif target == 'user':
+            if not target_id:
+                return jsonify({'error': 'target_id required for user target'}), 400
+            result = FirebaseAdmin.send_to_user(target_id, title, body, notification_data)
+            message = f"Уведомление отправлено пользователю {target_id}"
+
+        elif target == 'topic':
+            if not target_id:
+                return jsonify({'error': 'target_id required for topic target'}), 400
+            result = FirebaseAdmin.send_to_topic(target_id, title, body, notification_data)
+            message = f"Уведомление отправлено в тему {target_id}"
+
+        else:
+            return jsonify({'error': 'Invalid target'}), 400
+
+        # Логируем отправку уведомления
+        db.execute(
+            '''INSERT INTO notification_logs
+                   (admin_user_id, title, body, target, target_id, sent_at)
+               VALUES (?, ?, ?, ?, ?, ?)''',
+            (session['user_id'], title, body, target, target_id, int(time.time()))
+        )
+        db.commit()
+
+        return jsonify({
+            'message': message,
+            'sent_count': len(result) if result else 0
+        }), 200
+
+    except Exception as e:
+        print(f"Error in send_custom_notification: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@notifications_bp.route('/push/stats', methods=['GET'])
+def get_notification_stats():
+    try:
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        # Проверяем права админа
+        db = get_db()
+        user = db.execute(
+            'SELECT user_group FROM users WHERE id = ?',
+            (session['user_id'],)
+        ).fetchone()
+
+        if not user or user['user_group'] not in ['HQ', 'STF']:
+            return jsonify({'error': 'Admin access required'}), 403
+
+        # Статистика по подпискам
+        stats = db.execute('''
+                           SELECT COUNT(*)                as total_subscriptions,
+                                  COUNT(DISTINCT user_id) as unique_users,
+                                  COUNT(*)                as active_tokens
+                           FROM push_subscriptions
+                           WHERE fcm_token IS NOT NULL
+                           ''').fetchone()
+
+        return jsonify({
+            'stats': dict(stats)
+        }), 200
+
+    except Exception as e:
+        print(f"Error in get_notification_stats: {e}")
         return jsonify({'error': str(e)}), 500

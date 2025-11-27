@@ -2,17 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="theme-color" content="#0D2064" />
+    <meta name="theme-color" content="#0D2064"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Aurus">
     <link rel="apple-touch-icon" href="/static/images/icon-192x192.png">
     <title>Aurus</title>
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/static/other/manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/static/styles/base.css">
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-messaging-compat.js"></script>
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>

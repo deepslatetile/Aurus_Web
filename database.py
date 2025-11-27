@@ -222,47 +222,62 @@ def init_db():
 
     # Push Subscriptions table
     cursor.execute('''
-                   CREATE TABLE IF NOT EXISTS push_subscriptions
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            endpoint TEXT,
+            p256dh TEXT,
+            auth TEXT,
+            created_at INTEGER NOT NULL,
+            expires_at INTEGER,
+            fcm_token TEXT UNIQUE,  -- Новое поле для FCM токена
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    cursor.execute('''
+                   CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user
+                       ON push_subscriptions(user_id)
+                   ''')
+
+    cursor.execute('''
+                   CREATE TABLE IF NOT EXISTS notification_logs
                    (
                        id
                        INTEGER
                        PRIMARY
                        KEY
                        AUTOINCREMENT,
-                       user_id
-                       INTEGER,
-                       endpoint
-                       TEXT
-                       NOT
-                       NULL
-                       UNIQUE,
-                       p256dh
-                       TEXT
-                       NOT
-                       NULL,
-                       auth
-                       TEXT
-                       NOT
-                       NULL,
-                       created_at
+                       admin_user_id
                        INTEGER
                        NOT
                        NULL,
-                       expires_at
-                       INTEGER,
+                       title
+                       TEXT
+                       NOT
+                       NULL,
+                       body
+                       TEXT
+                       NOT
+                       NULL,
+                       target
+                       TEXT
+                       NOT
+                       NULL,
+                       target_id
+                       TEXT,
+                       sent_at
+                       INTEGER
+                       NOT
+                       NULL,
                        FOREIGN
                        KEY
                    (
-                       user_id
+                       admin_user_id
                    ) REFERENCES users
                    (
                        id
                    )
                        )
-                   ''')
-    cursor.execute('''
-                   CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user
-                       ON push_subscriptions(user_id)
                    ''')
 
     conn.commit()

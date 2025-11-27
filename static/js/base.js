@@ -1,16 +1,64 @@
+// Firebase конфигурация
+const firebaseConfig = {
+  apiKey: "AIzaSyAhLzb1UdObqvZoQixxxKBD6n6TXmf502I",
+  authDomain: "aurus-pwa.firebaseapp.com",
+  projectId: "aurus-pwa",
+  storageBucket: "aurus-pwa.firebasestorage.app",
+  messagingSenderId: "550033719644",
+  appId: "1:550033719644:web:43ede90b5c87dbbcd40199",
+  measurementId: "G-8ELDJ6532Y"
+};
+
+// Инициализируем Firebase
+let messaging = null;
+try {
+    const app = firebase.initializeApp(firebaseConfig);
+    messaging = firebase.messaging();
+    console.log('Firebase initialized successfully');
+} catch (error) {
+    console.error('Firebase initialization error:', error);
+}
+
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
     console.log('Registering Service Worker...');
-    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+    navigator.serviceWorker.register('/static/other/service-worker.js', { scope: '/' })
         .then((registration) => {
             console.log('Service Worker зарегистрирован успешно:', registration);
-            console.log('Scope:', registration.scope);
+
+            // Инициализируем Firebase Messaging после регистрации SW
+            if (messaging) {
+                initFirebaseMessaging(registration);
+            }
         })
         .catch((error) => {
             console.log('Ошибка регистрации Service Worker:', error);
         });
 } else {
     console.log('Service Worker не поддерживается');
+}
+
+// Firebase Messaging инициализация
+function initFirebaseMessaging(registration) {
+    // Используем существующий Service Worker для Firebase
+    messaging.useServiceWorker(registration);
+
+    // Обработка уведомлений когда приложение активно
+    messaging.onMessage((payload) => {
+        console.log('Received foreground message:', payload);
+
+        // Показываем уведомление даже когда приложение открыто
+        if (payload.notification) {
+            showLocalNotification(
+                payload.notification.title,
+                payload.notification.body,
+                payload.data?.url
+            );
+        }
+    });
+
+    // Проверяем статус уведомлений при инициализации
+    setTimeout(checkNotificationStatus, 1000);
 }
 
 // Navigation
@@ -120,6 +168,201 @@ async function loadAuthButtons() {
     }
 }
 
+// Notifications
+async function checkNotificationStatus() {
+    try {
+        // Проверяем есть ли сохраненный токен
+        const hasToken = await checkStoredToken();
+        updateNotificationButton(hasToken);
+    } catch (error) {
+        console.error('Error checking notification status:', error);
+        updateNotificationButton(false);
+    }
+}
+
+async function checkStoredToken() {
+    // Можно проверить в localStorage или сделать запрос к серверу
+    return localStorage.getItem('fcm_token') !== null;
+}
+
+function updateNotificationButton(isSubscribed) {
+    const btn = document.getElementById('notificationBtn');
+    if (btn) {
+        if (isSubscribed) {
+            btn.classList.add('subscribed', 'active');
+            btn.title = 'Уведомления включены (нажмите чтобы отключить)';
+        } else {
+            btn.classList.remove('subscribed', 'active');
+            btn.title = 'Уведомления выключены (нажмите чтобы включить)';
+        }
+    }
+}
+
+async function toggleNotifications() {
+    console.log('Toggle notifications clicked');
+
+    try {
+        const hasToken = await checkStoredToken();
+
+        if (hasToken) {
+            await unsubscribeFromPush();
+        } else {
+            await subscribeToPush();
+        }
+    } catch (error) {
+        console.error('Error toggling notifications:', error);
+        showNotificationMessage('❌ Ошибка при переключении уведомлений: ' + error.message, 'error');
+    }
+}
+
+async function subscribeToPush() {
+    try {
+        if (!messaging) {
+            showNotificationMessage('Firebase не инициализирован', 'error');
+            return;
+        }
+
+        if (!('Notification' in window)) {
+            showNotificationMessage('Этот браузер не поддерживает уведомления', 'error');
+            return;
+        }
+
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            showNotificationMessage('Разрешение на уведомления не получено!', 'error');
+            return;
+        }
+
+        // Получаем FCM токен
+        const token = await messaging.getToken({
+            vapidKey: 'BLk5vQJ4y7Q3a9zT8wX2R1cL0pM3nBv6qZ8dF9gH2jK5tY7wX' // Замените на ваш VAPID key если есть
+        });
+
+        if (token) {
+            // Сохраняем токен на сервер и локально
+            await sendTokenToServer(token);
+            localStorage.setItem('fcm_token', token);
+
+            updateNotificationButton(true);
+            showNotificationMessage('🔔 Уведомления включены!', 'success');
+        } else {
+            showNotificationMessage('❌ Не удалось получить токен', 'error');
+        }
+
+    } catch (error) {
+        console.error('Ошибка подписки:', error);
+        showNotificationMessage('❌ Ошибка при включении уведомлений: ' + error.message, 'error');
+    }
+}
+
+async function unsubscribeFromPush() {
+    try {
+        const token = localStorage.getItem('fcm_token');
+
+        if (token) {
+            // Удаляем токен с сервера
+            await fetch('/api/push/unsubscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    token: token
+                })
+            });
+
+            // Удаляем токен локально и отзываем его в FCM
+            localStorage.removeItem('fcm_token');
+            if (messaging) {
+                await messaging.deleteToken();
+            }
+
+            updateNotificationButton(false);
+            showNotificationMessage('🔕 Уведомления отключены', 'success');
+        }
+    } catch (error) {
+        console.error('Ошибка отписки:', error);
+        showNotificationMessage('❌ Ошибка при отключении уведомлений: ' + error.message, 'error');
+    }
+}
+
+async function sendTokenToServer(token) {
+    let user_id = null;
+    try {
+        const userResponse = await fetch('/api/auth/me');
+        if (userResponse.ok) {
+            const user = await userResponse.json();
+            user_id = user.id;
+        }
+    } catch (e) {
+        console.log('User not authenticated for notifications');
+    }
+
+    const response = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            token: token,
+            user_id: user_id
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Ошибка сохранения токена на сервере');
+    }
+}
+
+function showLocalNotification(title, body, url = '/') {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification(title, {
+            body: body,
+            icon: '/static/images/icon-192x192.png',
+            data: { url: url }
+        });
+
+        notification.onclick = function() {
+            window.focus();
+            if (url) {
+                window.location.href = url;
+            }
+            notification.close();
+        };
+    }
+}
+
+function showNotificationMessage(message, type) {
+    // Удаляем существующие уведомления
+    const existingAlerts = document.querySelectorAll('.alert-notification');
+    existingAlerts.forEach(alert => alert.remove());
+
+    const alert = document.createElement('div');
+    alert.className = `alert-notification alert-${type}`;
+    alert.textContent = message;
+    alert.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        min-width: 250px;
+        padding: 12px 16px;
+        border-radius: 4px;
+        color: white;
+        font-weight: bold;
+        background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+
+    document.body.appendChild(alert);
+
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 3000);
+}
+
 // Mobile Menu
 function toggleMobileMenu() {
     const mobileDropdown = document.getElementById('mobileDropdown');
@@ -146,12 +389,9 @@ function closeMobileMenu() {
 // Logout
 async function logout() {
     try {
+        // Отписываемся от уведомлений при выходе
         try {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
-            if (subscription) {
-                await unsubscribeFromPush();
-            }
+            await unsubscribeFromPush();
         } catch (e) {
             console.log('Error unsubscribing on logout:', e);
         }
@@ -169,178 +409,6 @@ async function logout() {
     } catch (error) {
         console.error('Logout error:', error);
     }
-}
-
-// Notifications
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-        .replace(/-/g, '+')
-        .replace(/_/g, '/');
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
-async function checkNotificationStatus() {
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        updateNotificationButton(!!subscription);
-    } catch (error) {
-        console.error('Error checking notification status:', error);
-        updateNotificationButton(false);
-    }
-}
-
-function updateNotificationButton(isSubscribed) {
-    const btn = document.getElementById('notificationBtn');
-    if (btn) {
-        if (isSubscribed) {
-            btn.classList.add('subscribed', 'active');
-            btn.title = 'Уведомления включены (нажмите чтобы отключить)';
-        } else {
-            btn.classList.remove('subscribed', 'active');
-            btn.title = 'Уведомления выключены (нажмите чтобы включить)';
-        }
-    }
-}
-
-async function toggleNotifications() {
-    console.log('Toggle notifications clicked');
-
-    try {
-        if (!('serviceWorker' in navigator)) {
-            showNotificationMessage('❌ Ваш браузер не поддерживает уведомления', 'error');
-            return;
-        }
-
-        if (!('PushManager' in window)) {
-            showNotificationMessage('❌ Ваш браузер не поддерживает push-уведомления', 'error');
-            return;
-        }
-
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-
-        if (subscription) {
-            await unsubscribeFromPush();
-        } else {
-            await subscribeToPush();
-        }
-    } catch (error) {
-        console.error('Error toggling notifications:', error);
-        showNotificationMessage('❌ Ошибка при переключении уведомлений: ' + error.message, 'error');
-    }
-}
-
-async function subscribeToPush() {
-    try {
-        if (!('Notification' in window)) {
-            showNotificationMessage('Этот браузер не поддерживает уведомления', 'error');
-            return;
-        }
-
-        const permission = await Notification.requestPermission();
-
-        if (permission !== 'granted') {
-            showNotificationMessage('Разрешение на уведомления не получено!', 'error');
-            return;
-        }
-
-        const registration = await navigator.serviceWorker.ready;
-
-        const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array('BM7DyIdnHT3n9NMl0RyvIBidOPtntzo8pI9OuhpTPEXthjcx4MziDCR2NHEfxVUhvzwqUdM77IKMhx3ftXM_svo')
-        });
-
-        await sendSubscriptionToServer(subscription);
-
-        updateNotificationButton(true);
-        showNotificationMessage('🔔 Уведомления включены!', 'success');
-
-    } catch (error) {
-        console.error('Ошибка подписки:', error);
-        showNotificationMessage('❌ Ошибка при включении уведомлений', 'error');
-    }
-}
-
-async function unsubscribeFromPush() {
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-
-        if (subscription) {
-            await fetch('/api/push/unsubscribe', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    endpoint: subscription.endpoint
-                })
-            });
-
-            await subscription.unsubscribe();
-
-            updateNotificationButton(false);
-            showNotificationMessage('🔕 Уведомления отключены', 'success');
-        }
-    } catch (error) {
-        console.error('Ошибка отписки:', error);
-        showNotificationMessage('❌ Ошибка при отключении уведомлений', 'error');
-    }
-}
-
-async function sendSubscriptionToServer(subscription) {
-    let user_id = null;
-    try {
-        const userResponse = await fetch('/api/auth/me');
-        if (userResponse.ok) {
-            const user = await userResponse.json();
-            user_id = user.id;
-        }
-    } catch (e) {
-        console.log('User not authenticated for notifications');
-    }
-
-    const response = await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            subscription: subscription,
-            user_id: user_id
-        })
-    });
-
-    if (!response.ok) {
-        throw new Error('Ошибка сохранения подписки');
-    }
-}
-
-function showNotificationMessage(message, type) {
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
-    alert.textContent = message;
-    alert.style.position = 'fixed';
-    alert.style.top = '20px';
-    alert.style.right = '20px';
-    alert.style.zIndex = '10000';
-    alert.style.minWidth = '250px';
-
-    document.body.appendChild(alert);
-
-    setTimeout(() => {
-        alert.remove();
-    }, 3000);
 }
 
 // Event Listeners

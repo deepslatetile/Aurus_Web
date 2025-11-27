@@ -1,12 +1,54 @@
 // service-worker.js
 
+// Импортируем Firebase
+importScripts('https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.6.0/firebase-messaging-compat.js');
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAhLzb1UdObqvZoQixxxKBD6n6TXmf502I",
+  authDomain: "aurus-pwa.firebaseapp.com",
+  projectId: "aurus-pwa",
+  storageBucket: "aurus-pwa.firebasestorage.app",
+  messagingSenderId: "550033719644",
+  appId: "1:550033719644:web:43ede90b5c87dbbcd40199",
+  measurementId: "G-8ELDJ6532Y"
+};
+
+// Инициализируем Firebase
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+// Обработка уведомлений когда приложение в фоне/закрыто
+messaging.onBackgroundMessage((payload) => {
+  console.log('Received background message:', payload);
+
+  const notificationTitle = payload.notification?.title || 'Aurus';
+  const notificationOptions = {
+    body: payload.notification?.body || 'Новое уведомление',
+    icon: '/static/images/icon-192x192.png',
+    badge: '/static/images/icon-72x72.png',
+    data: payload.data || { url: '/' },
+    actions: [
+      {
+        action: 'open',
+        title: 'Открыть'
+      },
+      {
+        action: 'close',
+        title: 'Закрыть'
+      }
+    ]
+  };
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Стандартный кэш (оставляем на всякий случай)
 const CACHE_NAME = 'aurus-pwa-v1';
-// Используем относительные пути для кэширования
 const urlsToCache = [
   '/',
   '/static/styles/base.css',
   '/static/js/base.js',
-  '/static/js/base.html',
   '/static/images/icon-192x192.png',
   '/static/images/icon-512x512.png'
 ];
@@ -23,7 +65,6 @@ self.addEventListener('install', (event) => {
         console.error('Service Worker: Cache error:', error);
       })
   );
-  // Активируем сразу после установки
   self.skipWaiting();
 });
 
@@ -44,97 +85,34 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  // Пропускаем не-GET запросы
-  if (event.request.method !== 'GET') return;
+// Обработка кликов по уведомлению
+self.addEventListener('notificationclick', function(event) {
+  console.log('Service Worker: Notification clicked', event.action);
+  event.notification.close();
 
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Возвращаем кэш если есть, иначе делаем запрос
-        return response || fetch(event.request);
-      })
-      .catch(() => {
-        // Fallback для ошибок
-        return caches.match('/');
-      })
-  );
-});
-
-self.addEventListener('push', function(event) {
-    console.log('Service Worker: Push received');
-
-    if (!event.data) {
-        console.log('Service Worker: No push data');
-        return;
-    }
-
-    let data = {};
-    try {
-        data = event.data.json();
-        console.log('Service Worker: Push data:', data);
-    } catch (e) {
-        console.error('Service Worker: Error parsing push data:', e);
-        // Если данные не в JSON, используем текстовые данные
-        data = {
-            title: 'Уведомление',
-            body: event.data.text() || 'Новое уведомление'
-        };
-    }
-
-    const options = {
-        body: data.body || 'Уведомление от Aurus',
-        icon: data.icon || '/static/images/icon-192x192.png',
-        badge: '/static/images/icon-72x72.png',
-        image: data.image,
-        actions: [
-            {
-                action: 'open',
-                title: 'Открыть'
-            },
-            {
-                action: 'close',
-                title: 'Закрыть'
-            }
-        ],
-        data: {
-            url: data.url || '/'
-        },
-        requireInteraction: true,
-        vibrate: [200, 100, 200]
-    };
+  if (event.action === 'open' || !event.action) {
+    const urlToOpen = event.notification.data?.url || '/';
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'Aurus', options)
-        .then(() => {
-            console.log('Service Worker: Notification shown');
-        })
-        .catch((error) => {
-            console.error('Service Worker: Notification error:', error);
-        })
+      clients.matchAll({type: 'window', includeUncontrolled: true})
+      .then((windowClients) => {
+        // Ищем открытое окно приложения
+        for (let client of windowClients) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            return client.navigate(urlToOpen).then(() => client.focus());
+          }
+        }
+        // Открываем новое окно если не нашли
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
     );
+  }
+  // Для действия 'close' просто закрываем уведомление
 });
 
-self.addEventListener('notificationclick', function(event) {
-    console.log('Service Worker: Notification clicked', event.action);
-    event.notification.close();
-
-    if (event.action === 'open' || !event.action) {
-        event.waitUntil(
-            clients.matchAll({type: 'window', includeUncontrolled: true})
-            .then((windowClients) => {
-                // Ищем открытое окно приложения
-                for (let client of windowClients) {
-                    if (client.url.includes(self.location.origin) && 'focus' in client) {
-                        return client.focus();
-                    }
-                }
-                // Открываем новое окно если не нашли
-                if (clients.openWindow) {
-                    return clients.openWindow(event.notification.data.url || '/');
-                }
-            })
-        );
-    }
-    // Для действия 'close' просто закрываем уведомление
+// Обработка закрытия уведомления
+self.addEventListener('notificationclose', function(event) {
+  console.log('Service Worker: Notification closed', event.notification.tag);
 });
