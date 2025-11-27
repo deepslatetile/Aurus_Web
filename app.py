@@ -51,9 +51,13 @@ app.register_blueprint(notifications_bp, url_prefix='/api')
 def serve_fonts(filename):
     return send_from_directory('static/fonts', filename)
 
-@app.route('/static/other/<path:filename>')
-def serve_other(filename):
-    return send_from_directory('static/other', filename)
+@app.route('/service-worker.js')
+def serve_service_worker():
+    return send_from_directory('', 'service-worker.js')
+
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory('', 'manifest.json')
 
 @app.route('/static/images/<path:filename>')
 def serve_images(filename):
