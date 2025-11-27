@@ -184,7 +184,7 @@ async function subscribeToPush() {
         // Подписываемся на push-уведомления
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array('ТВОЙ_PUBLIC_VAPID_KEY') // замени на свой ключ
+            applicationServerKey: urlBase64ToUint8Array('BM7DyIdnHT3n9NMl0RyvIBidOPtntzo8pI9OuhpTPEXthjcx4MziDCR2NHEfxVUhvzwqUdM77IKMhx3ftXM_svo')
         });
 
         // Отправляем подписку на сервер
