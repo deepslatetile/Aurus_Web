@@ -247,6 +247,42 @@ def admin_web_configs():
     return render_template('admin_web_configs.html')
 
 
+@app.route('/admin/phrases', methods=['GET'])
+def admin_phrases():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    db = get_db()
+    user = db.execute(
+        'SELECT user_group, nickname FROM users WHERE id = ?',
+        (session['user_id'],)
+    ).fetchone()
+
+    if not user or user['user_group'] not in ['HQ', 'STF']:
+        return redirect('/')
+
+    session['user_nickname'] = user['nickname']
+
+    return render_template('admin_phrases.html')
+
+
+@app.route('/admin/weather', methods=['GET'])
+def admin_weather():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    db = get_db()
+    user = db.execute(
+        'SELECT user_group FROM users WHERE id = ?',
+        (session['user_id'],)
+    ).fetchone()
+
+    if not user or user['user_group'] not in ['HQ', 'STF']:
+        return redirect('/')
+
+    return render_template('admin_weather.html')
+
+
 def check_environment():
     # TODO
     return True
