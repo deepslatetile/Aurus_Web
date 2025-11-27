@@ -25,23 +25,21 @@
                 </a>
             </div>
 
-
             <button class="mobile-menu-toggle" id="mobileMenuToggle">
                 <i class="fas fa-bars"></i>
             </button>
 
             <ul class="nav-menu" id="navMenu">
-
+                <!-- Navigation will be loaded by base.js -->
             </ul>
 
             <div class="auth-buttons" id="authButtons">
-
+                <!-- Auth buttons will be loaded by base.js -->
             </div>
-
 
             <div class="mobile-dropdown" id="mobileDropdown">
                 <ul class="mobile-dropdown-menu" id="mobileDropdownMenu">
-
+                    <!-- Mobile navigation will be loaded by base.js -->
                 </ul>
             </div>
         </nav>
@@ -65,17 +63,6 @@
 </footer>
 
 <script src="/static/js/base.js"></script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/other/service-worker.js')
-    .then((registration) => {
-      console.log('Service Worker зарегистрирован успешно:', registration);
-    })
-    .catch((error) => {
-      console.log('Ошибка регистрации Service Worker:', error);
-    });
-}
-</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>
