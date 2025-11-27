@@ -50,6 +50,10 @@ app.register_blueprint(admin_users_bp, url_prefix='/admin/api')
 def serve_fonts(filename):
     return send_from_directory('static/fonts', filename)
 
+@app.route('/static/other/<path:filename>')
+def serve_other(filename):
+    return send_from_directory('static/other', filename)
+
 @app.route('/static/images/<path:filename>')
 def serve_images(filename):
     return send_from_directory('static/images', filename)
