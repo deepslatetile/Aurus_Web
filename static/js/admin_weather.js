@@ -1,16 +1,12 @@
-// Aviation Weather API base URL
-const WEATHER_API_URL = 'https://aviationweather.gov/api/data/metar';
+const WEATHER_API_BASE = '/admin/api/get/weather';
 
-// Загрузка при старте
 document.addEventListener('DOMContentLoaded', function() {
-    // Обработчик Enter в поле ICAO
     document.getElementById('icaoCode').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             fetchWeather();
         }
     });
 
-    // Обработчик Enter в поле множественных станций
     document.getElementById('multiStationsInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             fetchMultipleStationsData();
@@ -18,13 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Установка ICAO кода
 function setICAO(code) {
     document.getElementById('icaoCode').value = code.toUpperCase();
     fetchWeather();
 }
 
-// Получение погоды для одной станции
 async function fetchWeather() {
     const icaoCode = document.getElementById('icaoCode').value.trim().toUpperCase();
 
@@ -41,22 +35,23 @@ async function fetchWeather() {
     showLoading(true);
 
     try {
-        const response = await fetch(`${WEATHER_API_URL}?ids=${icaoCode}&format=json`);
+        const response = await fetch(`${WEATHER_API_BASE}/${icaoCode}`);
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
 
-        if (!data || data.length === 0) {
+        if (data.results === 0) {
             showAlert(`No weather data found for ${icaoCode}`, 'warning');
             displayEmptyState();
             return;
         }
 
-        displayWeatherData(data);
-        showAlert(`Weather data loaded for ${icaoCode}`, 'success');
+        displayWeatherData(data.data, data.cache_info);
+        showAlert(`Weather data loaded for ${icaoCode}${data.cache_info.from_cache ? ' (from cache)' : ''}`, 'success');
 
     } catch (error) {
         console.error('Error fetching weather:', error);
@@ -67,7 +62,6 @@ async function fetchWeather() {
     }
 }
 
-// Получение погоды для множественных станций
 async function fetchMultipleStationsData() {
     const stationsInput = document.getElementById('multiStationsInput').value.trim().toUpperCase();
 
@@ -92,21 +86,27 @@ async function fetchMultipleStationsData() {
 
     try {
         const stationsParam = stations.join(',');
-        const response = await fetch(`${WEATHER_API_URL}?ids=${stationsParam}&format=json`);
+        const response = await fetch(`${WEATHER_API_BASE}/multiple?stations=${stationsParam}`);
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
 
-        if (!data || data.length === 0) {
+        if (data.results === 0) {
             showAlert('No weather data found for the specified stations', 'warning');
             return;
         }
 
-        displayWeatherData(data);
-        showAlert(`Loaded data for ${data.length} station(s)`, 'success');
+        displayWeatherData(data.data, data.cache_info);
+
+        const cacheInfo = data.cache_info;
+        const cacheMessage = cacheInfo ?
+            ` (${cacheInfo.from_cache} from cache, ${cacheInfo.from_api} from API)` : '';
+
+        showAlert(`Loaded data for ${data.results} station(s)${cacheMessage}`, 'success');
 
     } catch (error) {
         console.error('Error fetching multiple stations:', error);
@@ -116,8 +116,7 @@ async function fetchMultipleStationsData() {
     }
 }
 
-// Отображение данных о погоде
-function displayWeatherData(weatherData) {
+function displayWeatherData(weatherData, cacheInfo = null) {
     const weatherCards = document.getElementById('weatherCards');
     const emptyState = document.getElementById('emptyState');
 
@@ -131,34 +130,39 @@ function displayWeatherData(weatherData) {
     weatherCards.style.display = 'grid';
 
     weatherData.forEach(station => {
-        const card = createWeatherCard(station);
+        const stationCacheInfo = station.cache_info || cacheInfo;
+        const card = createWeatherCard(station, stationCacheInfo);
         weatherCards.appendChild(card);
     });
 }
 
-// Создание карточки погоды
-function createWeatherCard(station) {
+function createWeatherCard(station, cacheInfo = null) {
     const card = document.createElement('div');
     card.className = 'weather-card';
 
-    const observationTime = new Date(station.obsTime * 1000).toLocaleString();
-    const temperature = station.temp !== undefined ? `${station.temp}°C` : 'N/A';
-    const dewPoint = station.dewp !== undefined ? `${station.dewp}°C` : 'N/A';
-    const wind = station.wdir !== undefined && station.wspd !== undefined
-        ? `${station.wdir}° at ${station.wspd} kt`
-        : 'N/A';
-    const visibility = station.visib !== undefined ? `${station.visib} km` : 'N/A';
-    const altimeter = station.altim !== undefined ? `${station.altim} hPa` : 'N/A';
+    const observationTime = new Date(station.observed).toLocaleString();
+    const temperature = station.temperature ? `${station.temperature.celsius}°C` : 'N/A';
+    const dewPoint = station.dewpoint ? `${station.dewpoint.celsius}°C` : 'N/A';
+    const wind = station.wind ? `${station.wind.degrees}° at ${station.wind.speed_kts} kt` : 'N/A';
+    const visibility = station.visibility ? `${station.visibility.meters_text} m` : 'N/A';
+    const altimeter = station.barometer ? `${station.barometer.hpa} hPa` : 'N/A';
+    const humidity = station.humidity ? `${station.humidity.percent}%` : 'N/A';
 
     card.innerHTML = `
         <div class="weather-header">
             <div class="station-info">
-                <h3>${station.icaoId}</h3>
-                <p class="station-location">${station.name || 'Unknown Location'}</p>
+                <h3>${station.icao}</h3>
+                <p class="station-location">${station.station?.name || 'Unknown Location'}</p>
                 <p class="station-location">Observed: ${observationTime}</p>
+                ${cacheInfo && cacheInfo.from_cache ? `
+                    <div class="cache-indicator">
+                        <i class="fas fa-database"></i>
+                        Cached (${Math.round(cacheInfo.cache_duration / 60)} min)
+                    </div>
+                ` : ''}
             </div>
-            <div class="flight-category ${station.fltCat ? station.fltCat.toLowerCase() : 'unknown'}">
-                ${station.fltCat || 'UNKN'}
+            <div class="flight-category ${station.flight_category ? station.flight_category.toLowerCase() : 'unknown'}">
+                ${station.flight_category || 'UNKN'}
             </div>
         </div>
         
@@ -184,14 +188,17 @@ function createWeatherCard(station) {
                 <span class="weather-value">${altimeter}</span>
             </div>
             <div class="weather-item">
-                <span class="weather-label">Weather</span>
-                <span class="weather-value">${station.wxString || 'N/A'}</span>
+                <span class="weather-label">Humidity</span>
+                <span class="weather-value">${humidity}</span>
             </div>
         </div>
         
-        ${station.rawOb ? `
-        <div class="weather-raw">
-            <p class="raw-metar">${station.rawOb}</p>
+        ${station.conditions && station.conditions.length > 0 ? `
+        <div class="weather-item">
+            <span class="weather-label">Conditions</span>
+            <span class="weather-value">
+                ${station.conditions.map(cond => cond.text).join(', ')}
+            </span>
         </div>
         ` : ''}
         
@@ -199,8 +206,14 @@ function createWeatherCard(station) {
         <div class="weather-item">
             <span class="weather-label">Clouds</span>
             <span class="weather-value">
-                ${station.clouds.map(cloud => `${cloud.cover} at ${cloud.base} ft`).join(', ')}
+                ${station.clouds.map(cloud => `${cloud.text} at ${cloud.feet} ft`).join(', ')}
             </span>
+        </div>
+        ` : ''}
+        
+        ${station.raw_text ? `
+        <div class="weather-raw">
+            <p class="raw-metar">${station.raw_text}</p>
         </div>
         ` : ''}
     `;
@@ -208,7 +221,6 @@ function createWeatherCard(station) {
     return card;
 }
 
-// Показать/скрыть загрузку
 function showLoading(show) {
     const loadingSpinner = document.getElementById('loadingSpinner');
     const weatherCards = document.getElementById('weatherCards');
@@ -222,7 +234,6 @@ function showLoading(show) {
     }
 }
 
-// Показать пустое состояние
 function displayEmptyState() {
     const emptyState = document.getElementById('emptyState');
     const weatherCards = document.getElementById('weatherCards');
@@ -231,7 +242,6 @@ function displayEmptyState() {
     weatherCards.style.display = 'none';
 }
 
-// Показать уведомление
 function showAlert(message, type) {
     const alert = document.getElementById('alertMessage');
     alert.textContent = message;
@@ -243,7 +253,6 @@ function showAlert(message, type) {
     }, 5000);
 }
 
-// Модальное окно для множественных станций
 function fetchMultipleStations() {
     document.getElementById('multiStationModal').style.display = 'flex';
 }
@@ -252,13 +261,176 @@ function closeMultiStationModal() {
     document.getElementById('multiStationModal').style.display = 'none';
 }
 
-// Закрытие модального окна при клике вне его
+function showCacheManagement() {
+    document.getElementById('cacheModal').style.display = 'flex';
+}
+
+function closeCacheModal() {
+    document.getElementById('cacheModal').style.display = 'none';
+}
+
+// Получить статус кэша
+async function getCacheStatus() {
+    try {
+        const response = await fetch('/admin/api/weather/cache/status');
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Access denied. Please check your admin permissions.');
+            }
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        displayCacheStatus(data.cache_status);
+
+    } catch (error) {
+        console.error('Error getting cache status:', error);
+        showAlert(`Error getting cache status: ${error.message}`, 'error');
+
+        // Показываем сообщение об ошибке в модальном окне
+        const cacheStatusElement = document.getElementById('cacheStatus');
+        cacheStatusElement.innerHTML = `
+            <div class="cache-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>${error.message}</p>
+                <p class="error-detail">Status: ${error.message.includes('Access denied') ? 'Unauthorized' : 'API Error'}</p>
+            </div>
+        `;
+    }
+}
+
+// Очистка кэша погоды
+async function clearWeatherCache() {
+    if (!confirm('Are you sure you want to clear the weather cache? This will remove all cached weather data.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/admin/api/weather/cache/clear', {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Access denied. Please check your admin permissions.');
+            }
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        showAlert(data.message, 'success');
+
+        // Обновляем статус кэша после очистки
+        getCacheStatus();
+
+    } catch (error) {
+        console.error('Error clearing cache:', error);
+        showAlert(`Error clearing cache: ${error.message}`, 'error');
+    }
+}
+
+function displayCacheStatus(cacheStatus) {
+    const cacheStatusElement = document.getElementById('cacheStatus');
+
+    if (!cacheStatus) {
+        cacheStatusElement.innerHTML = `
+            <div class="cache-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Unable to load cache status</p>
+            </div>
+        `;
+        return;
+    }
+
+    const utilizationPercent = Math.round((cacheStatus.total_entries / cacheStatus.max_entries) * 100);
+    const activePercent = Math.round((cacheStatus.active_entries / cacheStatus.max_entries) * 100);
+
+    cacheStatusElement.innerHTML = `
+        <div class="cache-stats">
+            <div class="cache-stat-row">
+                <div class="cache-stat">
+                    <span class="stat-label">Total Entries</span>
+                    <span class="stat-value">${cacheStatus.total_entries}</span>
+                </div>
+                <div class="cache-stat">
+                    <span class="stat-label">Active Entries</span>
+                    <span class="stat-value">${cacheStatus.active_entries}</span>
+                </div>
+                <div class="cache-stat">
+                    <span class="stat-label">Expired Entries</span>
+                    <span class="stat-value">${cacheStatus.expired_entries}</span>
+                </div>
+            </div>
+            
+            <div class="cache-stat-row">
+                <div class="cache-stat">
+                    <span class="stat-label">Max Capacity</span>
+                    <span class="stat-value">${cacheStatus.max_entries}</span>
+                </div>
+                <div class="cache-stat">
+                    <span class="stat-label">Utilization</span>
+                    <span class="stat-value ${utilizationPercent > 80 ? 'stat-warning' : ''}">
+                        ${utilizationPercent}%
+                    </span>
+                </div>
+                <div class="cache-stat">
+                    <span class="stat-label">Cache Duration</span>
+                    <span class="stat-value">${cacheStatus.cache_duration_minutes} min</span>
+                </div>
+            </div>
+        </div>
+        
+        ${cacheStatus.oldest_entries.length > 0 ? `
+        <div class="cache-entries-section">
+            <h4>Oldest Entries</h4>
+            <div class="cache-entries-list">
+                ${cacheStatus.oldest_entries.map(entry => `
+                    <div class="cache-entry">
+                        <span class="entry-icao">${entry.icao}</span>
+                        <span class="entry-time">${new Date(entry.created_at * 1000).toLocaleString()}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        ${cacheStatus.newest_entries.length > 0 ? `
+        <div class="cache-entries-section">
+            <h4>Newest Entries</h4>
+            <div class="cache-entries-list">
+                ${cacheStatus.newest_entries.map(entry => `
+                    <div class="cache-entry">
+                        <span class="entry-icao">${entry.icao}</span>
+                        <span class="entry-time">${new Date(entry.created_at * 1000).toLocaleString()}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        <div class="cache-actions">
+            <button class="btn btn-small btn-secondary" onclick="getCacheStatus()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="btn btn-small btn-danger" onclick="clearWeatherCache()">
+                <i class="fas fa-trash"></i> Clear Cache
+            </button>
+        </div>
+    `;
+}
+
 document.addEventListener('click', function(event) {
-    const modal = document.getElementById('multiStationModal');
-    if (event.target === modal) {
+    const multiModal = document.getElementById('multiStationModal');
+    const cacheModal = document.getElementById('cacheModal');
+
+    if (event.target === multiModal) {
         closeMultiStationModal();
     }
-});
 
-// Автозагрузка погоды для UNKL при загрузке страницы (опционально)
-// setTimeout(() => fetchWeather(), 1000);
+    if (event.target === cacheModal) {
+        closeCacheModal();
+    }
+});

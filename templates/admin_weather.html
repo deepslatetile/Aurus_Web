@@ -23,6 +23,9 @@
             <button class="btn btn-secondary" onclick="fetchMultipleStations()">
                 <i class="fas fa-layer-group"></i> Multiple Stations
             </button>
+            <button class="btn btn-secondary" onclick="showCacheManagement()">
+                <i class="fas fa-database"></i> Cache
+            </button>
         </div>
 
         <div class="favorite-stations">
@@ -73,6 +76,34 @@
                     </button>
                 </div>
                 <div class="stations-results" id="multiStationsResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для управления кэшем -->
+    <div class="modal" id="cacheModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Weather Cache Management</h3>
+                <button class="modal-close" onclick="closeCacheModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="cache-controls">
+                    <button class="btn btn-primary" onclick="getCacheStatus()">
+                        <i class="fas fa-info-circle"></i> Get Cache Status
+                    </button>
+                    <button class="btn btn-danger" onclick="clearWeatherCache()">
+                        <i class="fas fa-trash"></i> Clear Cache
+                    </button>
+                </div>
+                <div class="cache-status" id="cacheStatus">
+                    <div class="cache-info-placeholder">
+                        <i class="fas fa-database"></i>
+                        <p>Click "Get Cache Status" to view cache information</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -193,6 +193,33 @@ def init_db():
         )
     ''')
 
+    # Weather Cache table
+    cursor.execute('''
+                   CREATE TABLE IF NOT EXISTS weather_cache
+                   (
+                       icao_code
+                       TEXT
+                       PRIMARY
+                       KEY,
+                       data
+                       TEXT
+                       NOT
+                       NULL,
+                       created_at
+                       INTEGER
+                       NOT
+                       NULL,
+                       expires_at
+                       INTEGER
+                       NOT
+                       NULL
+                   )
+                   ''')
+    cursor.execute('''
+                   CREATE INDEX IF NOT EXISTS idx_weather_cache_expires
+                       ON weather_cache(expires_at)
+                   ''')
+
     conn.commit()
     conn.close()
 

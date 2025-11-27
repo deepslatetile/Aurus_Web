@@ -20,7 +20,9 @@ from api.web_configs import web_configs_bp
 from api.transactions import transactions_bp
 from api.flight_configs import flight_configs_bp
 from services.boarding_pass import boarding_bp
-from admin.bookings import admin_bookings_bp
+from admin.admin_bookings import admin_bookings_bp
+from admin.admin_weather import admin_weather_bp
+from admin.admin_users import admin_users_bp
 
 app = Flask(__name__)
 app = init_app(app)
@@ -37,9 +39,11 @@ app.register_blueprint(meals_bp, url_prefix='/api')
 app.register_blueprint(configs_bp, url_prefix='/api')
 app.register_blueprint(web_configs_bp, url_prefix='/api')
 app.register_blueprint(boarding_bp, url_prefix='/api')
-app.register_blueprint(admin_bookings_bp, url_prefix='/admin/api')
 app.register_blueprint(transactions_bp, url_prefix='/api')
 app.register_blueprint(flight_configs_bp, url_prefix='/api')
+app.register_blueprint(admin_bookings_bp, url_prefix='/admin/api')
+app.register_blueprint(admin_weather_bp, url_prefix='/admin/api')
+app.register_blueprint(admin_users_bp, url_prefix='/admin/api')
 
 
 @app.route('/static/fonts/<path:filename>')
@@ -281,6 +285,23 @@ def admin_weather():
         return redirect('/')
 
     return render_template('admin_weather.html')
+
+
+@app.route('/admin/users', methods=['GET'])
+def admin_users():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    db = get_db()
+    user = db.execute(
+        'SELECT user_group FROM users WHERE id = ?',
+        (session['user_id'],)
+    ).fetchone()
+
+    if not user or user['user_group'] not in ['HQ', 'STF']:
+        return redirect('/')
+
+    return render_template('admin_users.html')
 
 
 def check_environment():
