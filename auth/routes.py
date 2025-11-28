@@ -88,11 +88,12 @@ def create_user():
             return jsonify({"error": "User with this nickname already exists"}), 409
 
         password_hash = hashlib.sha256(password.encode()).hexdigest()
+        created_at = int(time.time())  # Добавьте эту строку!
 
         cursor.execute('''
-                       INSERT INTO users (nickname, password_hash, user_group, subgroup, session_token)
-                       VALUES (%s, %s, %s, %s, NULL)
-                       ''', (nickname, password_hash, user_group, subgroup))
+                       INSERT INTO users (nickname, password_hash, user_group, subgroup, session_token, created_at, miles)
+                       VALUES (%s, %s, %s, %s, NULL, %s, 0)
+                       ''', (nickname, password_hash, user_group, subgroup, created_at))
 
         user_id = cursor.lastrowid
         db.commit()
