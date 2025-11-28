@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify, session
 from services.utils import login_required
 from database import get_db
 from services.db_utils import handle_db_locks
-import base64
 
 meals_bp = Blueprint('meals', __name__)
 
@@ -23,35 +22,6 @@ def check_admin_access():
         return False
 
 
-def handle_image_data(image_data):
-    """Обрабатывает данные изображения из базы данных"""
-    if image_data is None:
-        return None
-
-    try:
-        if isinstance(image_data, bytes):
-            # Если это бинарные данные - конвертируем в base64
-            return f"data:image/jpeg;base64,{base64.b64encode(image_data).decode('utf-8')}"
-        elif isinstance(image_data, str):
-            # Если это строка - проверяем, это base64 или URL
-            if image_data.startswith(('http://', 'https://', '/static/', 'data:image')):
-                # Это URL или уже base64 - возвращаем как есть
-                return image_data
-            else:
-                # Возможно это base64 без префикса
-                try:
-                    base64.b64decode(image_data)
-                    return f"data:image/jpeg;base64,{image_data}"
-                except:
-                    # Не валидный base64 - возвращаем как есть
-                    return image_data
-        else:
-            return None
-    except Exception as e:
-        print(f"Error handling image data: {e}")
-        return None
-
-
 @meals_bp.route('/get/meals/<serve_class>', methods=['GET'])
 @handle_db_locks(max_retries=5)
 def get_meals_by_class(serve_class):
@@ -67,13 +37,14 @@ def get_meals_by_class(serve_class):
 
         response = []
         for meal in meals:
+            # Просто возвращаем image как есть - это всегда URL
             response.append({
                 "id": meal['id'],
                 "serve_class": meal['serve_class'],
                 "serve_time": meal['serve_time'],
                 "name": meal['name'],
                 "description": meal['description'] if meal['description'] is not None else "",
-                "image": handle_image_data(meal['image'])
+                "image": meal['image']  # Это всегда URL
             })
 
         return jsonify(response), 200
@@ -107,10 +78,7 @@ def post_meal():
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         description = data.get('description', '')
-        image = data.get('image', None)
-
-        # Сохраняем изображение как есть (строку), не конвертируем в бинарные данные
-        image_to_save = image
+        image = data.get('image', None)  # Это всегда URL
 
         db = get_db()
         cursor = db.cursor(dictionary=True)
@@ -123,7 +91,7 @@ def post_meal():
                            data['serve_time'],
                            data['name'],
                            description,
-                           image_to_save
+                           image  # Сохраняем URL как строку
                        ))
 
         meal_id = cursor.lastrowid
@@ -188,7 +156,7 @@ def get_all_meals():
                 "serve_time": meal['serve_time'],
                 "name": meal['name'],
                 "description": meal['description'] if meal['description'] is not None else "",
-                "image": handle_image_data(meal['image'])
+                "image": meal['image']  # Это всегда URL
             })
 
         return jsonify(response), 200
@@ -227,7 +195,7 @@ def update_meal(meal_id):
         for field in updatable_fields:
             if field in data:
                 update_fields.append(f"{field} = %s")
-                update_values.append(data[field])
+                update_values.append(data[field])  # Сохраняем как есть (URL)
 
         if not update_fields:
             return jsonify({"error": "No fields to update"}), 400
