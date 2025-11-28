@@ -76,7 +76,7 @@ async function processBookingPayment() {
     const description = document.getElementById('paymentDescription').value;
 
     if (isNaN(amount) || amount <= 0) {
-        alert('Please enter valid amount');
+        alert('Please enter valid positive amount');
         return;
     }
 
@@ -94,9 +94,9 @@ async function processBookingPayment() {
             body: JSON.stringify({
                 user_id: currentBooking.user_id,
                 booking_id: currentBooking.id,
-                amount: amount,
+                amount: -amount, // Отрицательная сумма - списание
                 description: description,
-                type: 'payment'
+                type: 'booking_payment'
             })
         });
 
@@ -106,7 +106,7 @@ async function processBookingPayment() {
             throw new Error(result.error || 'Failed to process payment');
         }
 
-        alert('Payment processed successfully!');
+        alert('Booking payment processed successfully!');
         resetForms();
 
     } catch (error) {
@@ -124,8 +124,8 @@ async function processUserPayment() {
     const amount = parseFloat(document.getElementById('userAmount').value);
     const description = document.getElementById('userDescription').value;
 
-    if (isNaN(amount)) {
-        alert('Please enter valid amount');
+    if (isNaN(amount) || amount === 0) {
+        alert('Please enter valid non-zero amount');
         return;
     }
 
@@ -135,24 +135,9 @@ async function processUserPayment() {
     }
 
     try {
-        const updateData = {
-            miles: (parseInt(currentUser.miles) || 0) + amount,
-            transaction_description: description
-        };
+        const transactionType = amount > 0 ? 'payment' : 'withdrawal';
 
-        const response = await fetch(`/api/put/user/${currentUser.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updateData)
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to process transaction');
-        }
-
-        await fetch('/api/post/transaction', {
+        const response = await fetch('/api/post/transaction', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -161,14 +146,21 @@ async function processUserPayment() {
                 user_id: currentUser.id,
                 amount: amount,
                 description: description,
-                type: amount > 0 ? 'payment' : 'refund'
+                type: transactionType
             })
         });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to process transaction');
+        }
 
         alert('Transaction processed successfully!');
         resetForms();
 
     } catch (error) {
+        console.error('Transaction error:', error);
         alert('Error processing transaction: ' + error.message);
     }
 }
@@ -184,7 +176,7 @@ async function processMassPayment() {
     }
 
     if (isNaN(amount) || amount === 0) {
-        alert('Please enter valid amount');
+        alert('Please enter valid non-zero amount');
         return;
     }
 
@@ -193,7 +185,10 @@ async function processMassPayment() {
         return;
     }
 
-    if (!confirm(`Process $${amount.toFixed(2)} payment for all valid bookings on flight ${flightNumber}?\nThis action cannot be undone.`)) {
+    const transactionType = amount > 0 ? 'mass_payment' : 'mass_withdrawal';
+    const actionType = amount > 0 ? 'payment' : 'withdrawal';
+
+    if (!confirm(`Process $${Math.abs(amount).toFixed(2)} ${actionType} for all valid bookings on flight ${flightNumber}?\nThis action cannot be undone.`)) {
         return;
     }
 
@@ -256,7 +251,7 @@ async function processMassPayment() {
                         booking_id: booking.id,
                         amount: amount,
                         description: `${description} - Flight ${flightNumber}`,
-                        type: 'mass_payment'
+                        type: transactionType
                     })
                 });
 
@@ -264,11 +259,11 @@ async function processMassPayment() {
 
                 if (transactionResponse.ok) {
                     processed++;
-                    console.log(`✅ Processed payment for user ${userId}, booking ${booking.id}`);
+                    console.log(`✅ Processed ${actionType} for user ${userId}, booking ${booking.id}`);
                 } else {
                     errors++;
                     errorDetails.push(`Booking ${booking.id}: ${transactionResult.error || 'Transaction failed'}`);
-                    console.warn(`❌ Failed payment for booking ${booking.id}:`, transactionResult.error);
+                    console.warn(`❌ Failed ${actionType} for booking ${booking.id}:`, transactionResult.error);
                 }
 
             } catch (error) {
@@ -278,7 +273,7 @@ async function processMassPayment() {
             }
         }
 
-        let resultMessage = `Mass payment completed!\nProcessed: ${processed}\nErrors: ${errors}`;
+        let resultMessage = `Mass ${actionType} completed!\nProcessed: ${processed}\nErrors: ${errors}`;
 
         if (errors > 0) {
             resultMessage += `\n\nError details:\n${errorDetails.slice(0, 5).join('\n')}`;
@@ -341,7 +336,6 @@ function displayTransactions(transactions) {
     }
 
     container.innerHTML = transactions.map(transaction => {
-        // Преобразуем amount в число
         const amount = parseFloat(transaction.amount);
 
         return `

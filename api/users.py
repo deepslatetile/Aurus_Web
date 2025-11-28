@@ -95,22 +95,6 @@ def put_user(user_id):
         update_query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = %s"
         cursor.execute(update_query, update_values)
 
-        if 'miles' in data and data['miles'] != user['miles']:
-            amount_change = data['miles'] - user['miles']
-            transaction_type = 'payment' if amount_change > 0 else 'refund'
-
-            cursor.execute('''
-                       INSERT INTO transactions (user_id, amount, description, type, admin_user_id, created_at)
-                       VALUES (%s, %s, %s, %s, %s, %s)
-                       ''', (
-                           user_id,
-                           amount_change,
-                           data.get('transaction_description', 'Manual adjustment'),
-                           transaction_type,
-                           session['user_id'],
-                           int(datetime.now().timestamp())
-                       ))
-
         db.commit()
         return jsonify({"message": f"User {user_id} updated successfully"}), 200
 
@@ -231,7 +215,7 @@ def get_user_by_virtual_id(virtual_id):
         cursor = db.cursor(dictionary=True)
 
         cursor.execute(
-            'SELECT id, nickname, virtual_id, user_group FROM users WHERE virtual_id = %s',
+            'SELECT id, nickname, virtual_id, user_group, miles FROM users WHERE virtual_id = %s',
             (virtual_id,)
         )
         user = cursor.fetchone()
@@ -241,7 +225,8 @@ def get_user_by_virtual_id(virtual_id):
                 'id': user['id'],
                 'nickname': user['nickname'],
                 'virtual_id': user['virtual_id'],
-                'user_group': user['user_group']
+                'user_group': user['user_group'],
+                'miles': user['miles']
             })
         else:
             return jsonify({'error': 'User not found'}), 404

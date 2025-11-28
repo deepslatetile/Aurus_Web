@@ -48,7 +48,7 @@ def create_transaction():
 
     try:
         user_result = execute_with_retry(
-            'SELECT id, nickname FROM users WHERE id = %s',
+            'SELECT id, nickname, miles FROM users WHERE id = %s',
             (data['user_id'],)
         )
         user = user_result.fetchone()
@@ -70,6 +70,7 @@ def create_transaction():
         if not isinstance(amount, (int, float)) or abs(amount) > 1000000:
             return jsonify({"error": "Invalid amount"}), 400
 
+        # Создаем транзакцию
         execute_with_retry(''' \
                            INSERT INTO transactions (user_id, booking_id, amount, description, type, admin_user_id,
                                                      created_at)
@@ -84,7 +85,14 @@ def create_transaction():
                                int(datetime.now().timestamp())
                            ))
 
-        print(f"Transaction created: user_id={data['user_id']}, amount={amount}, admin={session['user_id']}")
+        # Обновляем баланс пользователя
+        new_balance = user['miles'] + amount
+        execute_with_retry(
+            'UPDATE users SET miles = %s WHERE id = %s',
+            (new_balance, data['user_id'])
+        )
+
+        print(f"Transaction created: user_id={data['user_id']}, amount={amount}, new_balance={new_balance}, admin={session['user_id']}")
 
         return jsonify({
             "message": "Transaction created successfully",
@@ -92,7 +100,8 @@ def create_transaction():
                 "user_id": data['user_id'],
                 "amount": amount,
                 "description": data['description'],
-                "type": data['type']
+                "type": data['type'],
+                "new_balance": new_balance
             }
         }), 201
 
@@ -122,7 +131,7 @@ def get_user_transactions(user_id):
 
         result_list = []
         for transaction in transactions:
-            amount = int(transaction['amount'])
+            amount = float(transaction['amount'])
 
             result_list.append({
                 'id': transaction['id'],
@@ -167,7 +176,7 @@ def get_booking_transactions(booking_id):
                 'id': transaction['id'],
                 'user_id': transaction['user_id'],
                 'booking_id': transaction['booking_id'],
-                'amount': transaction['amount'],
+                'amount': float(transaction['amount']),
                 'description': transaction['description'],
                 'type': transaction['type'],
                 'admin_user_id': transaction['admin_user_id'],
