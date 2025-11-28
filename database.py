@@ -147,7 +147,7 @@ def init_db():
                 serve_time VARCHAR(255) NOT NULL,
                 name VARCHAR(255) NOT NULL,
                 description TEXT,
-                image LONGBLOB
+                image VARCHAR(255)
             )
         ''')
         print("✅ Meals table created")
