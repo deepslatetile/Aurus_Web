@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify, session
-from database import get_db
+from database import get_db, execute_with_retry
 from services.utils import login_required
 from datetime import datetime
+import time
+import sqlite3
 
 transactions_bp = Blueprint('transactions', __name__)
 
@@ -12,16 +14,16 @@ def check_admin_permissions():
         return False, "Not authenticated"
 
     try:
-        db = get_db()
-        user = db.execute(
+        # Используем безопасное выполнение с повторными попытками
+        result = execute_with_retry(
             'SELECT user_group FROM users WHERE id = ?',
             (user_id,)
-        ).fetchone()
+        )
 
-        if not user:
+        if not result:
             return False, "User not found"
 
-        user_group = user['user_group']
+        user_group = result.fetchone()[0]
 
         if user_group not in ['HQ', 'STF']:
             return False, f"Admin access required. Your group: {user_group}"
@@ -49,46 +51,46 @@ def create_transaction():
             return jsonify({"error": f"Missing required field: {field}"}), 400
 
     try:
-        db = get_db()
-        user_id = session['user_id']
-
-        user = db.execute(
+        # Проверяем существование пользователя
+        user_result = execute_with_retry(
             'SELECT id, nickname FROM users WHERE id = ?',
             (data['user_id'],)
-        ).fetchone()
+        )
+        user = user_result.fetchone()
 
         if not user:
             return jsonify({"error": "User not found"}), 404
 
         if data.get('booking_id'):
-            booking = db.execute(
+            booking_result = execute_with_retry(
                 'SELECT id, flight_number FROM bookings WHERE id = ?',
                 (data['booking_id'],)
-            ).fetchone()
+            )
+            booking = booking_result.fetchone()
 
             if not booking:
                 return jsonify({"error": "Booking not found"}), 404
 
         amount = data['amount']
-        if not isinstance(amount, (int, float)) or abs(amount) > 1000000:  # Лимит 1M
+        if not isinstance(amount, (int, float)) or abs(amount) > 1000000:
             return jsonify({"error": "Invalid amount"}), 400
 
-        db.execute(''' \
-                   INSERT INTO transactions (user_id, booking_id, amount, description, type, admin_user_id, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)
-                   ''', (
-                       data['user_id'],
-                       data.get('booking_id'),
-                       amount,
-                       data['description'],
-                       data['type'],
-                       user_id,
-                       int(datetime.now().timestamp())
-                   ))
+        # Создаем транзакцию с безопасным выполнением
+        execute_with_retry(''' \
+                           INSERT INTO transactions (user_id, booking_id, amount, description, type, admin_user_id,
+                                                     created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)
+                           ''', (
+                               data['user_id'],
+                               data.get('booking_id'),
+                               amount,
+                               data['description'],
+                               data['type'],
+                               session['user_id'],
+                               int(datetime.now().timestamp())
+                           ))
 
-        db.commit()
-
-        print(f"Transaction created: user_id={data['user_id']}, amount={amount}, admin={user_id}")
+        print(f"Transaction created: user_id={data['user_id']}, amount={amount}, admin={session['user_id']}")
 
         return jsonify({
             "message": "Transaction created successfully",
@@ -100,6 +102,12 @@ def create_transaction():
             }
         }), 201
 
+    except sqlite3.OperationalError as e:
+        if "locked" in str(e):
+            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
+        else:
+            print(f"Database error in transaction creation: {e}")
+            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Transaction creation error: {e}")
         return jsonify({"error": "Internal server error"}), 500
@@ -115,19 +123,20 @@ def get_user_transactions(user_id):
         if user_id != current_user_id and current_user_group not in ['HQ', 'STF']:
             return jsonify({"error": "Access denied"}), 403
 
-        db = get_db()
+        # Используем безопасное выполнение с повторными попытками
+        result = execute_with_retry(''' \
+                                    SELECT t.*, u.nickname as admin_nickname
+                                    FROM transactions t
+                                             LEFT JOIN users u ON t.admin_user_id = u.id
+                                    WHERE t.user_id = ?
+                                    ORDER BY t.created_at DESC
+                                    ''', (user_id,))
 
-        transactions = db.execute(''' \
-                                  SELECT t.*, u.nickname as admin_nickname
-                                  FROM transactions t
-                                           LEFT JOIN users u ON t.admin_user_id = u.id
-                                  WHERE t.user_id = ?
-                                  ORDER BY t.created_at DESC
-                                  ''', (user_id,)).fetchall()
+        transactions = result.fetchall()
 
-        result = []
+        result_list = []
         for transaction in transactions:
-            result.append({
+            result_list.append({
                 'id': transaction['id'],
                 'user_id': transaction['user_id'],
                 'booking_id': transaction['booking_id'],
@@ -140,8 +149,14 @@ def get_user_transactions(user_id):
                 'created_at_formatted': datetime.fromtimestamp(transaction['created_at']).strftime('%Y-%m-%d %H:%M:%S')
             })
 
-        return jsonify(result), 200
+        return jsonify(result_list), 200
 
+    except sqlite3.OperationalError as e:
+        if "locked" in str(e):
+            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
+        else:
+            print(f"Database error in get transactions: {e}")
+            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Get transactions error: {e}")
         return jsonify({"error": "Internal server error"}), 500
@@ -155,19 +170,20 @@ def get_booking_transactions(booking_id):
         if not has_permission:
             return jsonify({"error": message}), 403
 
-        db = get_db()
+        # Используем безопасное выполнение с повторными попытками
+        result = execute_with_retry(''' \
+                                    SELECT t.*, u.nickname as admin_nickname
+                                    FROM transactions t
+                                             LEFT JOIN users u ON t.admin_user_id = u.id
+                                    WHERE t.booking_id = ?
+                                    ORDER BY t.created_at DESC
+                                    ''', (booking_id,))
 
-        transactions = db.execute(''' \
-                                  SELECT t.*, u.nickname as admin_nickname
-                                  FROM transactions t
-                                           LEFT JOIN users u ON t.admin_user_id = u.id
-                                  WHERE t.booking_id = ?
-                                  ORDER BY t.created_at DESC
-                                  ''', (booking_id,)).fetchall()
+        transactions = result.fetchall()
 
-        result = []
+        result_list = []
         for transaction in transactions:
-            result.append({
+            result_list.append({
                 'id': transaction['id'],
                 'user_id': transaction['user_id'],
                 'booking_id': transaction['booking_id'],
@@ -180,8 +196,14 @@ def get_booking_transactions(booking_id):
                 'created_at_formatted': datetime.fromtimestamp(transaction['created_at']).strftime('%Y-%m-%d %H:%M:%S')
             })
 
-        return jsonify(result), 200
+        return jsonify(result_list), 200
 
+    except sqlite3.OperationalError as e:
+        if "locked" in str(e):
+            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
+        else:
+            print(f"Database error in get booking transactions: {e}")
+            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Get booking transactions error: {e}")
         return jsonify({"error": "Internal server error"}), 500

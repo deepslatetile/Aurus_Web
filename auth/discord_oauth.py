@@ -5,11 +5,13 @@ import secrets
 from datetime import datetime
 from urllib.parse import urlencode
 from services.utils import login_required
+from services.db_utils import handle_db_locks
 
 discord_bp = Blueprint('discord', __name__)
 
 
 @discord_bp.route('/discord')
+@handle_db_locks(max_retries=5)
 def auth_discord():
     from app import app
     if not app.config['DISCORD_CLIENT_ID'] or not app.config['DISCORD_CLIENT_SECRET']:
@@ -28,6 +30,7 @@ def auth_discord():
 
 
 @discord_bp.route('/discord/callback')
+@handle_db_locks(max_retries=5)
 def auth_discord_callback():
     from app import app
     if not app.config['DISCORD_CLIENT_ID'] or not app.config['DISCORD_CLIENT_SECRET']:
@@ -141,6 +144,7 @@ def auth_discord_callback():
 
 @discord_bp.route('/discord/connection', methods=['GET', 'DELETE'])
 @login_required
+@handle_db_locks(max_retries=5)
 def discord_connection():
     user_id = session['user_id']
     try:
@@ -198,6 +202,7 @@ def discord_connection():
 
 @discord_bp.route('/discord/userinfo', methods=['GET'])
 @login_required
+@handle_db_locks(max_retries=5)
 def discord_userinfo():
     user_id = session['user_id']
     try:
@@ -248,6 +253,7 @@ def discord_userinfo():
 
 @discord_bp.route('/discord/disconnect', methods=['POST'])
 @login_required
+@handle_db_locks(max_retries=5)
 def discord_disconnect():
     user_id = session['user_id']
     try:
@@ -361,6 +367,7 @@ def get_discord_user_roles(user_id, guild_id):
 
 @discord_bp.route('/api/internal/discord_roles/<guild_id>', methods=['GET'])
 @login_required
+@handle_db_locks(max_retries=5)
 def internal_discord_roles(guild_id):
     user_id = session['user_id']
     roles_data = get_discord_user_roles(user_id, guild_id)

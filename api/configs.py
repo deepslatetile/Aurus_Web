@@ -3,11 +3,13 @@ from services.utils import login_required
 from database import get_db
 import sqlite3
 import json
+from services.db_utils import handle_db_locks
 
 configs_bp = Blueprint('configs', __name__)
 
 
 @configs_bp.route('/get/config/<int:config_id>', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_config(config_id):
     try:
         conn = sqlite3.connect('airline.db')
@@ -36,6 +38,7 @@ def get_config(config_id):
 
 
 @configs_bp.route('/get/config/name/<config_name>', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_config_by_name(config_name):
     try:
         conn = sqlite3.connect('airline.db')
@@ -65,6 +68,7 @@ def get_config_by_name(config_name):
 
 @configs_bp.route('/post/config', methods=['POST'])
 @login_required
+@handle_db_locks(max_retries=5)
 def post_config():
     data = request.get_json()
     if not data:
@@ -113,6 +117,7 @@ def post_config():
 
 @configs_bp.route('/put/config/<int:config_id>', methods=['PUT'])
 @login_required
+@handle_db_locks(max_retries=5)
 def put_config(config_id):
     data = request.get_json()
     if not data:
@@ -164,6 +169,7 @@ def put_config(config_id):
 
 @configs_bp.route('/delete/config/<int:config_id>', methods=['DELETE'])
 @login_required
+@handle_db_locks(max_retries=5)
 def delete_config(config_id):
     try:
         conn = sqlite3.connect('airline.db')
@@ -187,6 +193,7 @@ def delete_config(config_id):
 
 
 @configs_bp.route('/get/configs/seatmaps', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_seatmap_configs():
     try:
         db = get_db()
@@ -216,6 +223,7 @@ def get_seatmap_configs():
 
 
 @configs_bp.route('/get/pax_services', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_pax_services():
     try:
         conn = sqlite3.connect('airline.db')
@@ -252,6 +260,7 @@ def get_pax_services():
 
 @configs_bp.route('/post/pax_service', methods=['POST'])
 @login_required
+@handle_db_locks(max_retries=5)
 def create_pax_service():
     db = get_db()
     admin_user = db.execute(

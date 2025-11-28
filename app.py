@@ -19,7 +19,6 @@ from api.configs import configs_bp
 from api.web_configs import web_configs_bp
 from api.transactions import transactions_bp
 from api.flight_configs import flight_configs_bp
-from api.notifications import notifications_bp
 from services.boarding_pass import boarding_bp
 from admin.admin_bookings import admin_bookings_bp
 from admin.admin_weather import admin_weather_bp
@@ -45,19 +44,15 @@ app.register_blueprint(flight_configs_bp, url_prefix='/api')
 app.register_blueprint(admin_bookings_bp, url_prefix='/admin/api')
 app.register_blueprint(admin_weather_bp, url_prefix='/admin/api')
 app.register_blueprint(admin_users_bp, url_prefix='/admin/api')
-app.register_blueprint(notifications_bp, url_prefix='/api')
+
 
 @app.route('/static/fonts/<path:filename>')
 def serve_fonts(filename):
     return send_from_directory('static/fonts', filename)
 
-@app.route('/service-worker.js')
-def serve_service_worker():
-    return send_from_directory('', 'service-worker.js')
-
-@app.route('/manifest.json')
-def serve_manifest():
-    return send_from_directory('', 'manifest.json')
+@app.route('/static/other/<path:filename>')
+def serve_other(filename):
+    return send_from_directory('static/other', filename)
 
 @app.route('/static/images/<path:filename>')
 def serve_images(filename):
@@ -67,6 +62,13 @@ def serve_images(filename):
 def serve_styles(filename):
     return send_from_directory('static/styles', filename)
 
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory('', 'manifest.json')
+
+@app.route('/service-worker.js')
+def serve_service_worker():
+    return send_from_directory('', 'service-worker.js')
 
 @app.route('/auth/discord')
 def discord_auth_redirect():
@@ -313,29 +315,12 @@ def admin_users():
     return render_template('admin_users.html')
 
 
-@app.route('/admin/notifications')
-def admin_notifications():
-    if 'user_id' not in session:
-        return redirect('/login')
-
-    db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
-        (session['user_id'],)
-    ).fetchone()
-
-    if not user or user['user_group'] not in ['HQ', 'STF']:
-        return redirect('/')
-
-    return render_template('admin_notifications.html')
-
-
 def check_environment():
     # TODO
     return True
 
 if __name__ == '__main__':
     if check_environment():
-        app.run(debug=app.config['DEBUG'], port=app.config['PORT'], host='0.0.0.0')
+        app.run(debug=app.config['DEBUG'], port=app.config['PORT'])
     else:
         print("❌ Application cannot start due to missing configuration")

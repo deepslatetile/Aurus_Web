@@ -3,12 +3,14 @@ from database import get_db
 from services.utils import login_required, generate_booking_id
 from datetime import datetime
 import sqlite3
+from services.db_utils import handle_db_locks
 
 
 bookings_bp = Blueprint('bookings', __name__)
 
 @bookings_bp.route('/get/booking/<id>', methods=['GET'])
 @login_required
+@handle_db_locks(max_retries=5)
 def get_booking(id):
     try:
         user_id = session['user_id']
@@ -43,6 +45,7 @@ def get_booking(id):
 
 
 @bookings_bp.route('/get/bookings/<flight_number>', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_bookings_by_flight(flight_number):
     try:
         db = get_db()
@@ -78,6 +81,7 @@ def get_bookings_by_flight(flight_number):
 
 
 @bookings_bp.route('/post/booking/', methods=['POST'])
+@handle_db_locks(max_retries=5)
 def create_booking():
     try:
         data = request.get_json()
@@ -132,6 +136,7 @@ def create_booking():
 
 @bookings_bp.route('/delete/booking/<booking_id>', methods=['DELETE'])
 @login_required
+@handle_db_locks(max_retries=5)
 def delete_booking(booking_id):
     try:
         user_id = session['user_id']

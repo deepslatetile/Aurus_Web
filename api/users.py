@@ -4,12 +4,14 @@ from database import get_db
 from services.utils import login_required
 import sqlite3
 import hashlib
+from services.db_utils import handle_db_locks
 
 users_bp = Blueprint('users', __name__)
 
 
 @users_bp.route('/get/user/<int:user_id>', methods=['GET'])
 @login_required
+@handle_db_locks(max_retries=5)
 def get_user(user_id):
     try:
         conn = sqlite3.connect('airline.db')
@@ -49,6 +51,7 @@ def get_user(user_id):
 
 @users_bp.route('/put/user/<int:user_id>', methods=['PUT'])
 @login_required
+@handle_db_locks(max_retries=5)
 def put_user(user_id):
     db = get_db()
     admin_user = db.execute(
@@ -119,6 +122,7 @@ def put_user(user_id):
 
 @users_bp.route('/delete/user/<int:user_id>', methods=['DELETE'])
 @login_required
+@handle_db_locks(max_retries=5)
 def delete_user(user_id):
     db = get_db()
     admin_user = db.execute(
@@ -149,6 +153,7 @@ def delete_user(user_id):
 
 
 @users_bp.route('/post/user', methods=['POST'])
+@handle_db_locks(max_retries=5)
 def post_user():
     data = request.get_json()
     if not data:
@@ -220,6 +225,7 @@ def post_user():
 
 
 @users_bp.route('/get/users/virtual/<virtual_id>', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_user_by_virtual_id(virtual_id):
     try:
         db = get_db()

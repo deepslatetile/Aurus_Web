@@ -41,7 +41,7 @@
 
 .stat-value {
     font-size: 2rem;
-    font-weight: bold;
+    /*font-weight: bold;*/
     color: #5facf6;
     margin-bottom: 0.5rem;
 }
@@ -76,7 +76,7 @@
 
 .filter-group label {
     color: #fff;
-    font-weight: 500;
+    /*font-weight: 500;*/
 }
 
 .filter-group input,
@@ -94,7 +94,7 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: 500;
+    /*font-weight: 500;*/
     transition: background-color 0.3s;
     white-space: nowrap;
 }
@@ -167,7 +167,7 @@
 }
 
 .user-name {
-    font-weight: bold;
+    /*font-weight: bold;*/
     font-size: 1.1rem;
     color: #5facf6;
 }
@@ -191,32 +191,32 @@
 
 .detail-label {
     color: #ccc;
-    font-weight: 500;
+    /*font-weight: 500;*/
 }
 
 .user-group-hq {
     color: #ff6b6b;
-    font-weight: bold;
+    /*font-weight: bold;*/
 }
 
 .user-group-stf {
     color: #4ecdc4;
-    font-weight: bold;
+    /*font-weight: bold;*/
 }
 
 .user-group-pax {
     color: #45b7d1;
-    font-weight: bold;
+    /*font-weight: bold;*/
 }
 
 .status-active {
     color: #00C851;
-    font-weight: bold;
+    /*font-weight: bold;*/
 }
 
 .status-inactive {
     color: #ff4444;
-    font-weight: bold;
+    /*font-weight: bold;*/
 }
 
 /* Pagination */
@@ -299,7 +299,7 @@
     color: #aaa;
     float: right;
     font-size: 28px;
-    font-weight: bold;
+    /*font-weight: bold;*/
     cursor: pointer;
 }
 
@@ -319,7 +319,7 @@
     display: block;
     margin-bottom: 0.5rem;
     color: #fff;
-    font-weight: 500;
+    /*font-weight: 500;*/
 }
 
 .form-group input,
@@ -352,7 +352,7 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: 500;
+    /*font-weight: 500;*/
     transition: background-color 0.3s;
     flex: 1;
     min-width: 120px;

@@ -3,11 +3,13 @@ from database import get_db
 from datetime import datetime
 import sqlite3
 from services.utils import login_required
+from services.db_utils import handle_db_locks
 
 schedule_bp = Blueprint('schedule', __name__)
 
 
 @schedule_bp.route('/get/schedule', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_schedule():
     try:
         conn = sqlite3.connect('airline.db')
@@ -54,6 +56,7 @@ def get_schedule():
 
 
 @schedule_bp.route('/get/schedule/<flight_number>', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_flight(flight_number):
     try:
         conn = sqlite3.connect('airline.db')
@@ -101,6 +104,7 @@ def get_flight(flight_number):
 
 @schedule_bp.route('/post/schedule', methods=['POST'])
 @login_required
+@handle_db_locks(max_retries=5)
 def post_schedule():
     db = get_db()
     admin_user = db.execute(
@@ -170,6 +174,7 @@ def post_schedule():
 
 @schedule_bp.route('/put/schedule/<int:flight_id>', methods=['PUT'])
 @login_required
+@handle_db_locks(max_retries=5)
 def put_schedule(flight_id):
     data = request.get_json()
     if not data:
@@ -224,6 +229,7 @@ def put_schedule(flight_id):
 
 @schedule_bp.route('/delete/schedule/<int:flight_id>', methods=['DELETE'])
 @login_required
+@handle_db_locks(max_retries=5)
 def delete_schedule(flight_id):
     try:
         conn = sqlite3.connect('airline.db')

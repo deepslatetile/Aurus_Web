@@ -9,6 +9,8 @@ from barcode.writer import ImageWriter
 from io import BytesIO
 import importlib.util
 import os
+import time
+from database import get_db, execute_with_retry
 
 
 def unix_to_readable(n):
@@ -107,17 +109,16 @@ def draw_default_boarding_pass(info):
 def draw_boarding_pass(style, info):
     if isinstance(style, int) or (isinstance(style, str) and style.isdigit()):
         try:
-            conn = sqlite3.connect('airline.db')
-            c = conn.cursor()
-            c.execute('''
-                      SELECT data
-                      FROM flight_configs
-                      WHERE id = ?
-                        AND type = 'boarding_style'
-                        AND is_active = 1
-                      ''', (int(style),))
-            config = c.fetchone()
-            conn.close()
+            # Используем безопасное выполнение запроса
+            result = execute_with_retry('''
+                                        SELECT data
+                                        FROM flight_configs
+                                        WHERE id = ?
+                                          AND type = 'boarding_style'
+                                          AND is_active = 1
+                                        ''', (int(style),))
+
+            config = result.fetchone()
 
             if config:
                 config_data = json.loads(config[0])
@@ -155,26 +156,23 @@ def boarding_pass_to_pdf(image):
 @boarding_bp.route('/get/boarding_pass/<booking_id>/<style>', methods=['GET'])
 def get_boarding_pass(booking_id, style):
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        # Используем безопасное выполнение с повторными попытками
+        result = execute_with_retry('''
+                                    SELECT b.flight_number,
+                                           b.seat,
+                                           b.serve_class,
+                                           s.departure,
+                                           s.arrival,
+                                           s.datetime,
+                                           b.note,
+                                           b.user_id,
+                                           b.passenger_name
+                                    FROM bookings b
+                                             JOIN schedule s ON b.flight_number = s.flight_number
+                                    WHERE b.id = ?
+                                    ''', (booking_id,))
 
-        c.execute('''
-                  SELECT b.flight_number,
-                         b.seat,
-                         b.serve_class,
-                         s.departure,
-                         s.arrival,
-                         s.datetime,
-                         b.note,
-                         b.user_id,
-                         b.passenger_name
-                  FROM bookings b
-                           JOIN schedule s ON b.flight_number = s.flight_number
-                  WHERE b.id = ?
-                  ''', (booking_id,))
-
-        booking = c.fetchone()
-        conn.close()
+        booking = result.fetchone()
 
         if not booking:
             return jsonify({"error": "Booking not found"}), 404
@@ -211,6 +209,12 @@ def get_boarding_pass(booking_id, style):
         return send_file(img_bytes, mimetype='image/png',
                          download_name=f'boarding_pass_{booking_id}.png')
 
+    except sqlite3.OperationalError as e:
+        if "locked" in str(e):
+            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
+        else:
+            print(f"Database error in boarding pass generation: {e}")
+            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Boarding pass generation error: {e}")
         return jsonify({"error": f"Failed to generate boarding pass: {str(e)}"}), 500
@@ -219,26 +223,23 @@ def get_boarding_pass(booking_id, style):
 @boarding_bp.route('/get/boarding_pass_pdf/<booking_id>/<style>', methods=['GET'])
 def get_boarding_pass_pdf(booking_id, style):
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        # Используем безопасное выполнение с повторными попытками
+        result = execute_with_retry('''
+                                    SELECT b.flight_number,
+                                           b.seat,
+                                           b.serve_class,
+                                           s.departure,
+                                           s.arrival,
+                                           s.datetime,
+                                           b.note,
+                                           b.user_id,
+                                           b.passenger_name
+                                    FROM bookings b
+                                             JOIN schedule s ON b.flight_number = s.flight_number
+                                    WHERE b.id = ?
+                                    ''', (booking_id,))
 
-        c.execute('''
-                  SELECT b.flight_number,
-                         b.seat,
-                         b.serve_class,
-                         s.departure,
-                         s.arrival,
-                         s.datetime,
-                         b.note,
-                         b.user_id,
-                         b.passenger_name
-                  FROM bookings b
-                           JOIN schedule s ON b.flight_number = s.flight_number
-                  WHERE b.id = ?
-                  ''', (booking_id,))
-
-        booking = c.fetchone()
-        conn.close()
+        booking = result.fetchone()
 
         if not booking:
             return jsonify({"error": "Booking not found"}), 404
@@ -272,6 +273,12 @@ def get_boarding_pass_pdf(booking_id, style):
         return send_file(pdf_bytes, mimetype='application/pdf',
                          download_name=f'boarding_pass_{booking_id}.pdf')
 
+    except sqlite3.OperationalError as e:
+        if "locked" in str(e):
+            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
+        else:
+            print(f"Database error in PDF boarding pass generation: {e}")
+            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Boarding pass PDF generation error: {e}")
         return jsonify({"error": f"Failed to generate PDF boarding pass: {str(e)}"}), 500

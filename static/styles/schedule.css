@@ -172,3 +172,11 @@
         width: 100%;
     }
 }
+
+@media (max-width: 480px) {
+    .flight-details {
+        flex-direction: column;
+        margin-bottom: 10px;
+    }
+    .
+}

@@ -3,11 +3,13 @@ from services.utils import login_required
 import sqlite3
 import json
 from datetime import datetime
+from services.db_utils import handle_db_locks
 
 flight_configs_bp = Blueprint('flight_configs', __name__)
 
 @flight_configs_bp.route('/get/flight_configs/<config_type>', methods=['GET'])
 @login_required
+@handle_db_locks(max_retries=5)
 def get_flight_configs_by_type(config_type):
     try:
         valid_types = ['cabin_layout', 'service', 'boarding_style']
@@ -61,6 +63,7 @@ def get_flight_configs_by_type(config_type):
 
 @flight_configs_bp.route('/post/flight_config', methods=['POST'])
 @login_required
+@handle_db_locks(max_retries=5)
 def create_flight_config():
     if session.get('user_group') not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
@@ -125,6 +128,7 @@ def create_flight_config():
 
 @flight_configs_bp.route('/put/flight_config/<int:config_id>', methods=['PUT'])
 @login_required
+@handle_db_locks(max_retries=5)
 def update_flight_config(config_id):
     if session.get('user_group') not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
@@ -193,6 +197,7 @@ def update_flight_config(config_id):
 
 @flight_configs_bp.route('/delete/flight_config/<int:config_id>', methods=['DELETE'])
 @login_required
+@handle_db_locks(max_retries=5)
 def delete_flight_config(config_id):
     if session.get('user_group') not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
@@ -222,6 +227,7 @@ def delete_flight_config(config_id):
 
 @flight_configs_bp.route('/get/flight_configs', methods=['GET'])
 @login_required
+@handle_db_locks(max_retries=5)
 def get_all_flight_configs():
     if session.get('user_group') not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
@@ -271,6 +277,7 @@ def get_all_flight_configs():
 
 
 @flight_configs_bp.route('/get/boarding_styles', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_boarding_styles():
     try:
         conn = sqlite3.connect('airline.db')

@@ -51,6 +51,3 @@ __pycache__/
 env/
 venv/
 .venv/
-
-# Other
-firebase-service-account.json

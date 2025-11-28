@@ -1,6 +1,7 @@
 @font-face {
     font-family: 'mainfont';
     src: url('/static/fonts/Sansation.ttf');
+    /*font-weight: normal;*/
     font-style: normal;
     font-display: swap;
 }
@@ -54,6 +55,7 @@ body {
 
 .logo {
     font-size: 1.8rem;
+    /*font-weight: bold;*/
     display: flex;
     align-items: center;
     flex-shrink: 0;
@@ -72,6 +74,7 @@ body {
 .nav-item a {
     color: white;
     text-decoration: none;
+    /*font-weight: 500;*/
     padding: 0.5rem 1rem;
     border-radius: 4px;
     transition: background-color 0.3s;
@@ -95,6 +98,7 @@ body {
     border: none;
     padding: 0.5rem 1rem;
     border-radius: 4px;
+    /*font-weight: 600;*/
     cursor: pointer;
     transition: background-color 0.3s;
     text-decoration: none;
@@ -123,80 +127,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    /*font-weight: bold;*/
     flex-shrink: 0;
 }
 
 .user-info span {
     font-size: 0.9rem;
     white-space: nowrap;
-}
-
-.notification-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    position: relative;
-    padding: 8px;
-    border-radius: 50%;
-    transition: background-color 0.3s;
-}
-
-.notification-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.bell-icon {
-    font-size: 1.2rem;
-    color: #fff;
-}
-
-.status-dot {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #ff4444;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.notification-btn.subscribed .status-dot {
-    opacity: 1;
-    background-color: #4CAF50;
-}
-
-.notification-btn.active {
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-
-/* Alert Notifications */
-.alert-notification {
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-.auth-section {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
 }
 
 .main-content {
@@ -292,6 +229,11 @@ body {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
+.header_img_mobile {
+    display: none;
+}
+
+/* Mobile */
 @media (max-width: 768px) {
     .nav-container {
         flex-direction: row;
@@ -302,6 +244,7 @@ body {
     .mobile-menu-toggle {
         display: block;
         order: 2;
+        width: 40px;
     }
 
     .nav-menu {
@@ -334,15 +277,6 @@ body {
     .user-info span {
         font-size: 0.8rem;
     }
-
-    .notification-btn {
-        width: 35px;
-        height: 35px;
-    }
-
-    .notification-btn .bell-icon {
-        font-size: 1rem;
-    }
 }
 
 @media (max-width: 480px) {
@@ -373,18 +307,11 @@ body {
         font-size: 0.9rem;
     }
 
-    .auth-section {
-        gap: 0.3rem;
+    .header_img {
+        display: none;
     }
-
-    .notification-btn {
-        width: 32px;
-        height: 32px;
-        padding: 0.3rem;
-    }
-
-    .notification-btn .bell-icon {
-        font-size: 0.9rem;
+    .header_img_mobile {
+        display: unset;
     }
 }
 
@@ -404,14 +331,5 @@ body {
     .login-btn, .logout-btn, .profile-btn {
         padding: 0.3rem 0.6rem;
         font-size: 0.7rem;
-    }
-
-    .notification-btn {
-        width: 30px;
-        height: 30px;
-    }
-
-    .notification-btn .bell-icon {
-        font-size: 0.8rem;
     }
 }

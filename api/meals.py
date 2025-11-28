@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
 from services.utils import login_required
 import sqlite3
+from services.db_utils import handle_db_locks
 
 meals_bp = Blueprint('meals', __name__)
 
 @meals_bp.route('/get/meals/<serve_class>', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_meals_by_class(serve_class):
     try:
         conn = sqlite3.connect('airline.db')
@@ -37,6 +39,7 @@ def get_meals_by_class(serve_class):
 
 @meals_bp.route('/post/meal', methods=['POST'])
 @login_required
+@handle_db_locks(max_retries=5)
 def post_meal():
     data = request.get_json()
     if not data:
@@ -86,6 +89,7 @@ def post_meal():
 
 @meals_bp.route('/delete/meal/<meal_id>', methods=['DELETE'])
 @login_required
+@handle_db_locks(max_retries=5)
 def delete_meal(meal_id):
     try:
         conn = sqlite3.connect('airline.db')
@@ -109,6 +113,7 @@ def delete_meal(meal_id):
 
 
 @meals_bp.route('/get/all_meals', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_all_meals():
     try:
         conn = sqlite3.connect('airline.db')

@@ -5,11 +5,13 @@ import secrets
 from datetime import datetime
 from urllib.parse import urlencode
 from services.utils import login_required
+from services.db_utils import handle_db_locks
 
 roblox_bp = Blueprint('roblox', __name__)
 
 
 @roblox_bp.route('/roblox')
+@handle_db_locks(max_retries=5)
 def auth_roblox():
     from app import app
     if not app.config['ROBLOX_CLIENT_ID'] or not app.config['ROBLOX_CLIENT_SECRET']:
@@ -28,6 +30,7 @@ def auth_roblox():
 
 
 @roblox_bp.route('/roblox/callback')
+@handle_db_locks(max_retries=5)
 def auth_roblox_callback():
     from app import app
     if not app.config['ROBLOX_CLIENT_ID'] or not app.config['ROBLOX_CLIENT_SECRET']:
@@ -144,6 +147,7 @@ def auth_roblox_callback():
 
 @roblox_bp.route('/roblox/connection', methods=['GET', 'DELETE'])
 @login_required
+@handle_db_locks(max_retries=5)
 def roblox_connection():
     user_id = session['user_id']
     try:
@@ -195,6 +199,7 @@ def roblox_connection():
 
 @roblox_bp.route('/roblox/userinfo', methods=['GET'])
 @login_required
+@handle_db_locks(max_retries=5)
 def roblox_userinfo():
     user_id = session['user_id']
     try:
@@ -246,6 +251,7 @@ def roblox_userinfo():
 
 @roblox_bp.route('/roblox/disconnect', methods=['POST'])
 @login_required
+@handle_db_locks(max_retries=5)
 def roblox_disconnect():
     user_id = session['user_id']
     try:
@@ -311,6 +317,7 @@ def get_roblox_user_info(user_id):
 
 @roblox_bp.route('/api/internal/roblox_info', methods=['GET'])
 @login_required
+@handle_db_locks(max_retries=5)
 def internal_roblox_info():
     user_id = session['user_id']
     roblox_info = get_roblox_user_info(user_id)

@@ -2,10 +2,12 @@ from flask import Blueprint, request, jsonify
 from services.utils import login_required
 from datetime import datetime
 import sqlite3
+from services.db_utils import handle_db_locks
 
 web_configs_bp = Blueprint('web_configs', __name__)
 
 @web_configs_bp.route('/get/web_config/id/<int:config_id>', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_web_config_by_id(config_id):
     try:
         conn = sqlite3.connect('airline.db')
@@ -33,6 +35,7 @@ def get_web_config_by_id(config_id):
         return jsonify({"error": "Something went wrong"}), 500
 
 @web_configs_bp.route('/get/web_config/state/<state>', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_web_configs_by_state(state):
     try:
         conn = sqlite3.connect('airline.db')
@@ -67,6 +70,7 @@ def get_web_configs_by_state(state):
 
 @web_configs_bp.route('/post/web_config/', methods=['POST'])
 @login_required
+@handle_db_locks(max_retries=5)
 def create_web_config():
     data = request.get_json()
     if not data:
@@ -114,6 +118,7 @@ def create_web_config():
 
 @web_configs_bp.route('/delete/web_config/<int:config_id>', methods=['DELETE'])
 @login_required
+@handle_db_locks(max_retries=5)
 def delete_web_config(config_id):
     try:
         conn = sqlite3.connect('airline.db')
@@ -137,6 +142,7 @@ def delete_web_config(config_id):
 
 @web_configs_bp.route('/put/web_config/<int:config_id>/<int:state>', methods=['PUT'])
 @login_required
+@handle_db_locks(max_retries=5)
 def update_web_config_state(config_id, state):
     try:
         conn = sqlite3.connect('airline.db')
@@ -163,6 +169,7 @@ def update_web_config_state(config_id, state):
         return jsonify({"error": "Something went wrong"}), 500
 
 @web_configs_bp.route('/get/page_content/<page_name>', methods=['GET'])
+@handle_db_locks(max_retries=5)
 def get_page_content(page_name):
     try:
         conn = sqlite3.connect('airline.db')
@@ -193,6 +200,7 @@ def get_page_content(page_name):
 
 @web_configs_bp.route('/put/page_content/<page_name>', methods=['PUT'])
 @login_required
+@handle_db_locks(max_retries=5)
 def update_page_content(page_name):
     data = request.get_json()
     if not data:

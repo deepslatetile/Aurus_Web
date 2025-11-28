@@ -336,7 +336,7 @@ async function loadServices() {
                 <div class="service-item" onclick="toggleService('${safeServiceName}', ${service.price})" data-service="${safeServiceName}">
                     <div class="service-header">
                         <div class="service-name">${service.name}</div>
-                        <div class="service-price">$${service.price}</div>
+                        <div class="service-price">λu ${service.price}</div>
                     </div>
                     ${service.description ? '<div class="service-description">' + service.description + '</div>' : ''}
                 </div>
@@ -386,7 +386,7 @@ function updateSelectedServicesList() {
         <div class="selected-service-item">
             <div class="service-info">
                 <span class="service-name">${service.name}</span>
-                <span class="service-price">$${service.price}</span>
+                <span class="service-price">λu ${service.price}</span>
             </div>
             <button class="remove-service" onclick="removeService('${safeServiceName}')">
                 <i class="fas fa-times"></i>
@@ -570,9 +570,9 @@ function getSeatStatus(seatId) {
 }
 
 function createSeatHTML(seatId, seatLetter, status, seatClass, price) {
-    const priceDisplay = price > 0 ? '<div class="seat-price">$' + price + '</div>' : '';
+    const priceDisplay = price > 0 ? '<div class="seat-price">λu ' + price + '</div>' : '';
 
-    return '<div class="seat ' + seatClass + ' ' + status + '" onclick="selectSeat(\'' + seatId + '\', ' + price + ')" data-seat="' + seatId + '" title="Seat ' + seatId + ' - $' + price + '">' + seatLetter + priceDisplay + '</div>';
+    return '<div class="seat ' + seatClass + ' ' + status + '" onclick="selectSeat(\'' + seatId + '\', ' + price + ')" data-seat="' + seatId + '" title="Seat ' + seatId + ' - λu ' + price + '">' + seatLetter + priceDisplay + '</div>';
 }
 
 function selectSeat(seatId, price) {
@@ -606,7 +606,7 @@ function updateSeatInfo(seatId, price) {
     const priceAmount = document.getElementById('priceAmount');
 
     if (seatDisplay) seatDisplay.textContent = seatId;
-    if (priceAmount) priceAmount.textContent = '$' + price;
+    if (priceAmount) priceAmount.textContent = 'λu ' + price;
     if (priceInfo) priceInfo.style.display = 'block';
 
     let detailsHTML = '';
@@ -692,7 +692,7 @@ function updateConfirmationSummary() {
             servicesSummary.innerHTML = bookingData.selectedServices.map(service => `
                 <div class="summary-item">
                     <span class="summary-label">${service.name}:</span>
-                    <span class="summary-value">$${service.price}</span>
+                    <span class="summary-value">λu ${service.price}</span>
                 </div>
             `).join('');
         } else {
@@ -713,7 +713,7 @@ function updateConfirmationSummary() {
             </div>
             <div class="summary-item">
                 <span class="summary-label">Seat Price:</span>
-                <span class="summary-value">$${bookingData.selectedSeatPrice}</span>
+                <span class="summary-value">λu ${bookingData.selectedSeatPrice}</span>
             </div>
         `;
     }
@@ -723,7 +723,7 @@ function updateConfirmationSummary() {
         let priceHTML = `
             <div class="summary-item">
                 <span class="summary-label">Seat Price:</span>
-                <span class="summary-value">$${bookingData.selectedSeatPrice}</span>
+                <span class="summary-value">λu ${bookingData.selectedSeatPrice}</span>
             </div>
         `;
 
@@ -731,7 +731,7 @@ function updateConfirmationSummary() {
             priceHTML += `
                 <div class="summary-item">
                     <span class="summary-label">Services Total:</span>
-                    <span class="summary-value">$${servicesTotal}</span>
+                    <span class="summary-value">λu ${servicesTotal}</span>
                 </div>
             `;
         }
@@ -739,7 +739,7 @@ function updateConfirmationSummary() {
         priceHTML += `
             <div class="summary-item total-price">
                 <span class="summary-label">Total:</span>
-                <span class="summary-value">$${totalPrice}</span>
+                <span class="summary-value">λu ${totalPrice}</span>
             </div>
         `;
 

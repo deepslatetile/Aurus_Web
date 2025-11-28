@@ -189,10 +189,14 @@
 }
 
 .seat-selection {
-    display: grid;
+    /*display: grid;*/
     grid-template-columns: 1fr 300px;
     gap: 2rem;
     align-items: start;
+}
+
+.seat-selected {
+    background: #ff4444;
 }
 
 .seatmap-container {
@@ -810,5 +814,15 @@
 
     .flight-meta {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .summary-item {
+        flex-direction: column;
+    }
+
+    .summary-value {
+        text-align: left;
     }
 }
