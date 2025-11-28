@@ -70,6 +70,9 @@ def post_meal():
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
+        # Явно конвертируем image в строку
+        image_url = str(data.get('image')) if data.get('image') else None
+
         db = get_db()
         cursor = db.cursor(dictionary=True)
         cursor.execute('''
@@ -80,7 +83,7 @@ def post_meal():
                            data['serve_time'],
                            data['name'],
                            data.get('description', ''),
-                           data.get('image')  # Сохраняем как строку (URL)
+                           image_url  # Теперь это точно строка
                        ))
 
         meal_id = cursor.lastrowid
@@ -170,8 +173,12 @@ def update_meal(meal_id):
 
         for field in updatable_fields:
             if field in data:
+                if field == 'image':
+                    # Явно конвертируем image в строку
+                    update_values.append(str(data[field]))
+                else:
+                    update_values.append(data[field])
                 update_fields.append(f"{field} = %s")
-                update_values.append(data[field])
 
         if not update_fields:
             return jsonify({"error": "No fields to update"}), 400
