@@ -43,7 +43,8 @@ def cleanup_old_cache():
     cursor.execute('DELETE FROM weather_cache WHERE expires_at < %s', (current_time,))
 
     cursor.execute('SELECT COUNT(*) FROM weather_cache')
-    count = cursor.fetchone()['COUNT(*)']
+    count_result = cursor.fetchone()
+    count = count_result[0] if count_result else 0
 
     if count > MAX_CACHE_ENTRIES:
         cursor.execute('''
@@ -149,6 +150,7 @@ def get_weather(icao_code):
     except requests.exceptions.ConnectionError:
         return jsonify({'error': 'Cannot connect to weather service'}), 503
     except Exception as e:
+        print(f"Weather API error: {str(e)}")
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @admin_weather_bp.route('/get/weather/multiple', methods=['GET'])
@@ -214,6 +216,7 @@ def get_multiple_weather():
         return jsonify(combined_data)
 
     except Exception as e:
+        print(f"Multiple weather API error: {str(e)}")
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @admin_weather_bp.route('/weather/cache/clear', methods=['POST'])
@@ -254,11 +257,13 @@ def get_cache_status():
         cursor = db.cursor(dictionary=True)
 
         cursor.execute('SELECT COUNT(*) as total FROM weather_cache')
-        total_entries = cursor.fetchone()['total']
+        total_result = cursor.fetchone()
+        total_entries = total_result['total'] if total_result else 0
 
         current_time = int(time.time())
         cursor.execute('SELECT COUNT(*) as active FROM weather_cache WHERE expires_at > %s', (current_time,))
-        active_entries = cursor.fetchone()['active']
+        active_result = cursor.fetchone()
+        active_entries = active_result['active'] if active_result else 0
 
         cursor.execute('SELECT icao_code, created_at FROM weather_cache ORDER BY created_at ASC LIMIT 5')
         oldest_entries = cursor.fetchall()
