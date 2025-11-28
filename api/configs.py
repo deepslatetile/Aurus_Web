@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from services.utils import login_required
 from database import get_db
-import sqlite3
 import json
 from services.db_utils import handle_db_locks
 
@@ -12,22 +11,20 @@ configs_bp = Blueprint('configs', __name__)
 @handle_db_locks(max_retries=5)
 def get_config(config_id):
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM configs WHERE id = ?", (config_id,))
-        config = c.fetchone()
-
-        conn.close()
+        cursor.execute("SELECT * FROM configs WHERE id = %s", (config_id,))
+        config = cursor.fetchone()
 
         if not config:
             return jsonify({"error": "Config not found"}), 404
 
         config_info = {
-            "id": config[0],
-            "name": config[1],
-            "description": config[2] if config[2] is not None else "",
-            "image": config[3] if config[3] is not None else ""
+            "id": config['id'],
+            "name": config['name'],
+            "description": config['description'] if config['description'] is not None else "",
+            "image": config['image'] if config['image'] is not None else ""
         }
 
         return jsonify(config_info), 200
@@ -41,22 +38,20 @@ def get_config(config_id):
 @handle_db_locks(max_retries=5)
 def get_config_by_name(config_name):
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM configs WHERE name = ?", (config_name,))
-        config = c.fetchone()
-
-        conn.close()
+        cursor.execute("SELECT * FROM configs WHERE name = %s", (config_name,))
+        config = cursor.fetchone()
 
         if not config:
             return jsonify({"error": "Config not found"}), 404
 
         config_info = {
-            "id": config[0],
-            "name": config[1],
-            "description": config[2] if config[2] is not None else "",
-            "image": config[3] if config[3] is not None else ""
+            "id": config['id'],
+            "name": config['name'],
+            "description": config['description'] if config['description'] is not None else "",
+            "image": config['image'] if config['image'] is not None else ""
         }
 
         return jsonify(config_info), 200
@@ -83,27 +78,26 @@ def post_config():
 
         image = data.get('image', None)
 
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM configs WHERE name = ?", (data['name'],))
-        existing_config = c.fetchone()
+        cursor.execute("SELECT * FROM configs WHERE name = %s", (data['name'],))
+        existing_config = cursor.fetchone()
 
         if existing_config:
             return jsonify({"error": "Config with this name already exists"}), 409
 
-        c.execute('''
-                  INSERT INTO configs (name, description, image)
-                  VALUES (?, ?, ?)
-                  ''', (
-                      data['name'],
-                      data['description'],
-                      image
-                  ))
+        cursor.execute('''
+                       INSERT INTO configs (name, description, image)
+                       VALUES (%s, %s, %s)
+                       ''', (
+                           data['name'],
+                           data['description'],
+                           image
+                       ))
 
-        config_id = c.lastrowid
-        conn.commit()
-        conn.close()
+        config_id = cursor.lastrowid
+        db.commit()
 
         return jsonify({
             "message": "Config created successfully",
@@ -124,11 +118,11 @@ def put_config(config_id):
         return jsonify({"error": "No JSON data received"}), 400
 
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM configs WHERE id = ?", (config_id,))
-        config = c.fetchone()
+        cursor.execute("SELECT * FROM configs WHERE id = %s", (config_id,))
+        config = cursor.fetchone()
 
         if not config:
             return jsonify({"error": "Config not found"}), 404
@@ -140,26 +134,24 @@ def put_config(config_id):
 
         for field in updatable_fields:
             if field in data:
-                update_fields.append(f"{field} = ?")
+                update_fields.append(f"{field} = %s")
                 update_values.append(data[field])
 
         if not update_fields:
             return jsonify({"error": "No fields to update"}), 400
 
         if 'name' in data:
-            c.execute("SELECT * FROM configs WHERE name = ? AND id != ?", (data['name'], config_id))
-            existing_config = c.fetchone()
+            cursor.execute("SELECT * FROM configs WHERE name = %s AND id != %s", (data['name'], config_id))
+            existing_config = cursor.fetchone()
             if existing_config:
                 return jsonify({"error": "Config with this name already exists"}), 409
 
         update_values.append(config_id)
 
-        update_query = f"UPDATE configs SET {', '.join(update_fields)} WHERE id = ?"
-        c.execute(update_query, update_values)
+        update_query = f"UPDATE configs SET {', '.join(update_fields)} WHERE id = %s"
+        cursor.execute(update_query, update_values)
 
-        conn.commit()
-        conn.close()
-
+        db.commit()
         return jsonify({"message": f"Config {config_id} updated successfully"}), 200
 
     except Exception as e:
@@ -172,18 +164,17 @@ def put_config(config_id):
 @handle_db_locks(max_retries=5)
 def delete_config(config_id):
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM configs WHERE id = ?", (config_id,))
-        config = c.fetchone()
+        cursor.execute("SELECT * FROM configs WHERE id = %s", (config_id,))
+        config = cursor.fetchone()
 
         if not config:
             return jsonify({"error": "Config not found"}), 404
 
-        c.execute("DELETE FROM configs WHERE id = ?", (config_id,))
-        conn.commit()
-        conn.close()
+        cursor.execute("DELETE FROM configs WHERE id = %s", (config_id,))
+        db.commit()
 
         return jsonify({"message": f"Config {config_id} deleted successfully"}), 200
 
@@ -197,11 +188,13 @@ def delete_config(config_id):
 def get_seatmap_configs():
     try:
         db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        configs = db.execute(
-            'SELECT name, description, image FROM configs WHERE name LIKE ?',
+        cursor.execute(
+            'SELECT name, description, image FROM configs WHERE name LIKE %s',
             ('%seatmap%',)
-        ).fetchall()
+        )
+        configs = cursor.fetchall()
 
         result = []
         for config in configs:
@@ -226,29 +219,24 @@ def get_seatmap_configs():
 @handle_db_locks(max_retries=5)
 def get_pax_services():
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
-                  SELECT name, description, price
-                  FROM pax_service
-                  WHERE price > 0
-                  UNION
-                  SELECT name, description, data ->>'$.price' as price
-                  FROM flight_configs
-                  WHERE type = 'service' AND is_active = 1 AND json_extract(data, '$.price') > 0
-                  ORDER BY name
-                  ''')
+        cursor.execute('''
+                       SELECT name, description, price
+                       FROM pax_service
+                       WHERE price > 0
+                       ORDER BY name
+                       ''')
 
-        services = c.fetchall()
-        conn.close()
+        services = cursor.fetchall()
 
         result = []
         for service in services:
             result.append({
-                'name': service[0],
-                'description': service[1],
-                'price': float(service[2]) if service[2] else 0.0
+                'name': service['name'],
+                'description': service['description'],
+                'price': float(service['price']) if service['price'] else 0.0
             })
 
         return jsonify(result), 200
@@ -263,10 +251,13 @@ def get_pax_services():
 @handle_db_locks(max_retries=5)
 def create_pax_service():
     db = get_db()
-    admin_user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    admin_user = cursor.fetchone()
 
     if not admin_user or admin_user['user_group'] not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
@@ -279,16 +270,16 @@ def create_pax_service():
             return jsonify({"error": f"Missing required field: {field}"}), 400
 
     try:
-        db.execute('''
-                   INSERT INTO pax_service (name, description, groupname, subgroupname, price)
-                   VALUES (?, ?, ?, ?, ?)
-                   ''', (
-                       data['name'],
-                       data.get('description', ''),
-                       data.get('groupname', 'Custom Services'),
-                       data.get('subgroupname', 'General'),
-                       data['price']
-                   ))
+        cursor.execute('''
+                       INSERT INTO pax_service (name, description, groupname, subgroupname, price)
+                       VALUES (%s, %s, %s, %s, %s)
+                       ''', (
+                           data['name'],
+                           data.get('description', ''),
+                           data.get('groupname', 'Custom Services'),
+                           data.get('subgroupname', 'General'),
+                           data['price']
+                       ))
 
         db.commit()
         return jsonify({"message": "PAX service created successfully"}), 201

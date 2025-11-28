@@ -2,44 +2,40 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, session
 from database import get_db
 from services.utils import login_required
-import sqlite3
 import hashlib
 from services.db_utils import handle_db_locks
 
 users_bp = Blueprint('users', __name__)
-
 
 @users_bp.route('/get/user/<int:user_id>', methods=['GET'])
 @login_required
 @handle_db_locks(max_retries=5)
 def get_user(user_id):
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-        user = c.fetchone()
-
-        conn.close()
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
 
         if not user:
             return jsonify({"error": "User not found"}), 404
 
         user_info = {
-            "id": user[0],
-            "nickname": user[1],
-            "created_at": user[2],
-            "virtual_id": user[3],
-            "social_id": user[4],
-            "miles": user[5],
-            "bonuses": user[6] if user[6] is not None else "",
-            "user_group": user[7],
-            "subgroup": user[8],
-            "link": user[9] if user[9] is not None else "",
-            "pfp": user[10] if user[10] is not None else "",
-            "metadata": user[11] if user[11] is not None else "",
-            "pending": user[12] if user[12] is not None else "",
-            "status": user[13] if user[13] is not None else ""
+            "id": user['id'],
+            "nickname": user['nickname'],
+            "created_at": user['created_at'],
+            "virtual_id": user['virtual_id'],
+            "social_id": user['social_id'],
+            "miles": user['miles'],
+            "bonuses": user['bonuses'] if user['bonuses'] is not None else "",
+            "user_group": user['user_group'],
+            "subgroup": user['subgroup'],
+            "link": user['link'] if user['link'] is not None else "",
+            "pfp": user['pfp'] if user['pfp'] is not None else "",
+            "metadata": user['metadata'] if user['metadata'] is not None else "",
+            "pending": user['pending'] if user['pending'] is not None else "",
+            "status": user['status'] if user['status'] is not None else ""
         }
 
         return jsonify(user_info), 200
@@ -48,16 +44,18 @@ def get_user(user_id):
         print(e)
         return jsonify({"error": "Something went wrong"}), 500
 
-
 @users_bp.route('/put/user/<int:user_id>', methods=['PUT'])
 @login_required
 @handle_db_locks(max_retries=5)
 def put_user(user_id):
     db = get_db()
-    admin_user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    admin_user = cursor.fetchone()
 
     if not admin_user or admin_user['user_group'] not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
@@ -67,10 +65,11 @@ def put_user(user_id):
         return jsonify({"error": "No JSON data received"}), 400
 
     try:
-        user = db.execute(
-            "SELECT * FROM users WHERE id = ?",
+        cursor.execute(
+            "SELECT * FROM users WHERE id = %s",
             (user_id,)
-        ).fetchone()
+        )
+        user = cursor.fetchone()
 
         if not user:
             return jsonify({"error": "User not found"}), 404
@@ -85,7 +84,7 @@ def put_user(user_id):
 
         for field in updatable_fields:
             if field in data:
-                update_fields.append(f"{field} = ?")
+                update_fields.append(f"{field} = %s")
                 update_values.append(data[field])
 
         if not update_fields:
@@ -93,16 +92,16 @@ def put_user(user_id):
 
         update_values.append(user_id)
 
-        update_query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = ?"
-        db.execute(update_query, update_values)
+        update_query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = %s"
+        cursor.execute(update_query, update_values)
 
         if 'miles' in data and data['miles'] != user['miles']:
             amount_change = data['miles'] - user['miles']
             transaction_type = 'payment' if amount_change > 0 else 'refund'
 
-            db.execute('''
+            cursor.execute('''
                        INSERT INTO transactions (user_id, amount, description, type, admin_user_id, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?)
+                       VALUES (%s, %s, %s, %s, %s, %s)
                        ''', (
                            user_id,
                            amount_change,
@@ -119,30 +118,33 @@ def put_user(user_id):
         print(e)
         return jsonify({"error": "Something went wrong"}), 500
 
-
 @users_bp.route('/delete/user/<int:user_id>', methods=['DELETE'])
 @login_required
 @handle_db_locks(max_retries=5)
 def delete_user(user_id):
     db = get_db()
-    admin_user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    admin_user = cursor.fetchone()
 
     if not admin_user or admin_user['user_group'] not in ['HQ', 'STF']:
         return jsonify({"error": "Admin access required"}), 403
 
     try:
-        user = db.execute(
-            "SELECT * FROM users WHERE id = ?",
+        cursor.execute(
+            "SELECT * FROM users WHERE id = %s",
             (user_id,)
-        ).fetchone()
+        )
+        user = cursor.fetchone()
 
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
         db.commit()
 
         return jsonify({"message": f"User {user_id} deleted successfully"}), 200
@@ -150,7 +152,6 @@ def delete_user(user_id):
     except Exception as e:
         print(e)
         return jsonify({"error": "Something went wrong"}), 500
-
 
 @users_bp.route('/post/user', methods=['POST'])
 @handle_db_locks(max_retries=5)
@@ -182,19 +183,19 @@ def post_user():
         status = data.get('status', 'active')
         created_at = int(datetime.now().timestamp())
 
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM users WHERE nickname = ?", (data['nickname'],))
-        existing_user = c.fetchone()
+        cursor.execute("SELECT * FROM users WHERE nickname = %s", (data['nickname'],))
+        existing_user = cursor.fetchone()
 
         if existing_user:
             return jsonify({"error": "Username already exists"}), 409
 
-        c.execute('''
+        cursor.execute('''
                   INSERT INTO users (nickname, created_at, virtual_id, social_id, miles, bonuses,
                                      user_group, subgroup, link, pfp, metadata, pending, status, password_hash)
-                  VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  VALUES (%s, %s, NULL, NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                   ''', (
                       data['nickname'],
                       created_at,
@@ -210,9 +211,8 @@ def post_user():
                       password_hash
                   ))
 
-        user_id = c.lastrowid
-        conn.commit()
-        conn.close()
+        user_id = cursor.lastrowid
+        db.commit()
 
         return jsonify({
             "message": "User created successfully",
@@ -223,17 +223,18 @@ def post_user():
         print(e)
         return jsonify({"error": "Something went wrong"}), 500
 
-
 @users_bp.route('/get/users/virtual/<virtual_id>', methods=['GET'])
 @handle_db_locks(max_retries=5)
 def get_user_by_virtual_id(virtual_id):
     try:
         db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        user = db.execute(
-            'SELECT id, nickname, virtual_id, user_group FROM users WHERE virtual_id = ?',
+        cursor.execute(
+            'SELECT id, nickname, virtual_id, user_group FROM users WHERE virtual_id = %s',
             (virtual_id,)
-        ).fetchone()
+        )
+        user = cursor.fetchone()
 
         if user:
             return jsonify({

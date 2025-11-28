@@ -1,6 +1,6 @@
 from flask import Blueprint, send_file, jsonify
 import io
-import sqlite3
+from database import get_db, execute_with_retry
 import json
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime, timezone
@@ -9,14 +9,10 @@ from barcode.writer import ImageWriter
 from io import BytesIO
 import importlib.util
 import os
-import time
-from database import get_db, execute_with_retry
-
 
 def unix_to_readable(n):
     dt = datetime.fromtimestamp(n, tz=timezone.utc)
     return dt.strftime('%d.%m %H:%M')
-
 
 def generate_barcode(data, width=730, height=220):
     try:
@@ -48,7 +44,6 @@ def generate_barcode(data, width=730, height=220):
         print(f"Barcode generation error: {e}")
         return Image.new('RGB', (width, height), 'white')
 
-
 def load_style_module(style_name: str):
     try:
         if style_name == 'default':
@@ -66,7 +61,6 @@ def load_style_module(style_name: str):
     except Exception as e:
         print(f"Error loading style module {style_name}: {e}")
         return None
-
 
 def draw_default_boarding_pass(info):
     base_image_path = f'bp_styles/default_{info["serve_class"].lower().replace(" ", "-")}.png'
@@ -105,15 +99,13 @@ def draw_default_boarding_pass(info):
 
     return img
 
-
 def draw_boarding_pass(style, info):
     if isinstance(style, int) or (isinstance(style, str) and style.isdigit()):
         try:
-            # Используем безопасное выполнение запроса
             result = execute_with_retry('''
                                         SELECT data
                                         FROM flight_configs
-                                        WHERE id = ?
+                                        WHERE id = %s
                                           AND type = 'boarding_style'
                                           AND is_active = 1
                                         ''', (int(style),))
@@ -121,7 +113,7 @@ def draw_boarding_pass(style, info):
             config = result.fetchone()
 
             if config:
-                config_data = json.loads(config[0])
+                config_data = json.loads(config['data'])
                 style = config_data.get('draw_function', 'default')
         except Exception as e:
             print(f"Error loading boarding style config: {e}")
@@ -137,9 +129,7 @@ def draw_boarding_pass(style, info):
             print(f"Style {style} not found, using default")
             return draw_default_boarding_pass(info)
 
-
 boarding_bp = Blueprint('boarding', __name__)
-
 
 def boarding_pass_to_pdf(image):
     pdf_bytes = io.BytesIO()
@@ -152,11 +142,9 @@ def boarding_pass_to_pdf(image):
 
     return pdf_bytes
 
-
 @boarding_bp.route('/get/boarding_pass/<booking_id>/<style>', methods=['GET'])
 def get_boarding_pass(booking_id, style):
     try:
-        # Используем безопасное выполнение с повторными попытками
         result = execute_with_retry('''
                                     SELECT b.flight_number,
                                            b.seat,
@@ -169,7 +157,7 @@ def get_boarding_pass(booking_id, style):
                                            b.passenger_name
                                     FROM bookings b
                                              JOIN schedule s ON b.flight_number = s.flight_number
-                                    WHERE b.id = ?
+                                    WHERE b.id = %s
                                     ''', (booking_id,))
 
         booking = result.fetchone()
@@ -177,15 +165,15 @@ def get_boarding_pass(booking_id, style):
         if not booking:
             return jsonify({"error": "Booking not found"}), 404
 
-        flight_number = booking[0]
-        seat = booking[1]
-        serve_class = booking[2]
-        departure = booking[3]
-        arrival = booking[4]
-        flight_datetime = booking[5]
-        note_data = booking[6]
-        user_id = booking[7]
-        passenger_name = booking[8] or "unknown"
+        flight_number = booking['flight_number']
+        seat = booking['seat']
+        serve_class = booking['serve_class']
+        departure = booking['departure']
+        arrival = booking['arrival']
+        flight_datetime = booking['datetime']
+        note_data = booking['note']
+        user_id = booking['user_id']
+        passenger_name = booking['passenger_name'] or "unknown"
 
         info = {
             'booking_id': booking_id,
@@ -209,21 +197,13 @@ def get_boarding_pass(booking_id, style):
         return send_file(img_bytes, mimetype='image/png',
                          download_name=f'boarding_pass_{booking_id}.png')
 
-    except sqlite3.OperationalError as e:
-        if "locked" in str(e):
-            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
-        else:
-            print(f"Database error in boarding pass generation: {e}")
-            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Boarding pass generation error: {e}")
         return jsonify({"error": f"Failed to generate boarding pass: {str(e)}"}), 500
 
-
 @boarding_bp.route('/get/boarding_pass_pdf/<booking_id>/<style>', methods=['GET'])
 def get_boarding_pass_pdf(booking_id, style):
     try:
-        # Используем безопасное выполнение с повторными попытками
         result = execute_with_retry('''
                                     SELECT b.flight_number,
                                            b.seat,
@@ -236,7 +216,7 @@ def get_boarding_pass_pdf(booking_id, style):
                                            b.passenger_name
                                     FROM bookings b
                                              JOIN schedule s ON b.flight_number = s.flight_number
-                                    WHERE b.id = ?
+                                    WHERE b.id = %s
                                     ''', (booking_id,))
 
         booking = result.fetchone()
@@ -244,15 +224,15 @@ def get_boarding_pass_pdf(booking_id, style):
         if not booking:
             return jsonify({"error": "Booking not found"}), 404
 
-        flight_number = booking[0]
-        seat = booking[1]
-        serve_class = booking[2]
-        departure = booking[3]
-        arrival = booking[4]
-        flight_datetime = booking[5]
-        note_data = booking[6]
-        user_id = booking[7]
-        passenger_name = booking[8]
+        flight_number = booking['flight_number']
+        seat = booking['seat']
+        serve_class = booking['serve_class']
+        departure = booking['departure']
+        arrival = booking['arrival']
+        flight_datetime = booking['datetime']
+        note_data = booking['note']
+        user_id = booking['user_id']
+        passenger_name = booking['passenger_name']
 
         info = {
             'booking_id': booking_id,
@@ -273,12 +253,6 @@ def get_boarding_pass_pdf(booking_id, style):
         return send_file(pdf_bytes, mimetype='application/pdf',
                          download_name=f'boarding_pass_{booking_id}.pdf')
 
-    except sqlite3.OperationalError as e:
-        if "locked" in str(e):
-            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
-        else:
-            print(f"Database error in PDF boarding pass generation: {e}")
-            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Boarding pass PDF generation error: {e}")
         return jsonify({"error": f"Failed to generate PDF boarding pass: {str(e)}"}), 500

@@ -1,7 +1,6 @@
 from functools import wraps
 from flask import session, jsonify
-import sqlite3
-
+from database import get_db
 
 def login_required(f):
     @wraps(f)
@@ -10,13 +9,12 @@ def login_required(f):
             return jsonify({"error": "Authentication required"}), 401
 
         try:
-            conn = sqlite3.connect('airline.db')
-            c = conn.cursor()
-            c.execute("SELECT session_token FROM users WHERE id = ?", (session['user_id'],))
-            user = c.fetchone()
-            conn.close()
+            db = get_db()
+            cursor = db.cursor(dictionary=True)
+            cursor.execute("SELECT session_token FROM users WHERE id = %s", (session['user_id'],))
+            user = cursor.fetchone()
 
-            if not user or user[0] != session.get('session_token'):
+            if not user or user['session_token'] != session.get('session_token'):
                 session.clear()
                 return jsonify({"error": "Invalid session"}), 401
         except Exception as e:
@@ -29,22 +27,21 @@ def login_required(f):
 
 def get_current_user():
     if 'user_id' in session:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
-        user = c.fetchone()
-        conn.close()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM users WHERE id = %s", (session['user_id'],))
+        user = cursor.fetchone()
 
         if user:
             return {
-                "id": user[0],
-                "nickname": user[1],
-                "created_at": user[2],
-                "virtual_id": user[3],
-                "social_id": user[4],
-                "miles": user[5],
-                "user_group": user[7],
-                "subgroup": user[8]
+                "id": user['id'],
+                "nickname": user['nickname'],
+                "created_at": user['created_at'],
+                "virtual_id": user['virtual_id'],
+                "social_id": user['social_id'],
+                "miles": user['miles'],
+                "user_group": user['user_group'],
+                "subgroup": user['subgroup']
             }
     return None
 

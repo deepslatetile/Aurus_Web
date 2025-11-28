@@ -4,17 +4,18 @@ import json
 
 admin_bookings_bp = Blueprint('admin_bookings', __name__)
 
-
 def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
 
         db = get_db()
-        user = db.execute(
-            'SELECT user_group FROM users WHERE id = ?',
+        cursor = db.cursor(dictionary=True)
+        cursor.execute(
+            'SELECT user_group FROM users WHERE id = %s',
             (session['user_id'],)
-        ).fetchone()
+        )
+        user = cursor.fetchone()
 
         if not user or user['user_group'] not in ['HQ', 'STF']:
             return jsonify({'error': 'Forbidden'}), 403
@@ -24,11 +25,11 @@ def admin_required(f):
     decorated_function.__name__ = f.__name__
     return decorated_function
 
-
 @admin_bookings_bp.route('/bookings', methods=['GET'])
 @admin_required
 def get_all_bookings():
     db = get_db()
+    cursor = db.cursor(dictionary=True)
 
     flight_filter = request.args.get('flight_number', '')
 
@@ -37,17 +38,18 @@ def get_all_bookings():
             FROM bookings b
                      LEFT JOIN users u ON b.user_id = u.id
                      LEFT JOIN schedule s ON b.flight_number = s.flight_number
-            WHERE 1 = 1 \
+            WHERE 1 = 1
             '''
     params = []
 
     if flight_filter:
-        query += ' AND b.flight_number LIKE ?'
+        query += ' AND b.flight_number LIKE %s'
         params.append(f'%{flight_filter}%')
 
     query += ' ORDER BY b.created_at DESC'
 
-    bookings = db.execute(query, params).fetchall()
+    cursor.execute(query, params)
+    bookings = cursor.fetchall()
 
     result = []
     for booking in bookings:
@@ -66,25 +68,26 @@ def get_all_bookings():
 
     return jsonify(result)
 
-
 @admin_bookings_bp.route('/bookings/<booking_id>', methods=['GET'])
 @admin_required
 def get_booking_detail(booking_id):
     db = get_db()
+    cursor = db.cursor(dictionary=True)
 
-    booking = db.execute('''
-                         SELECT b.*,
-                                u.nickname,
-                                u.virtual_id,
-                                u.user_group,
-                                s.departure,
-                                s.arrival,
-                                s.datetime as flight_datetime
-                         FROM bookings b
-                                  LEFT JOIN users u ON b.user_id = u.id
-                                  LEFT JOIN schedule s ON b.flight_number = s.flight_number
-                         WHERE b.id = ?
-                         ''', (booking_id,)).fetchone()
+    cursor.execute('''
+                    SELECT b.*,
+                           u.nickname,
+                           u.virtual_id,
+                           u.user_group,
+                           s.departure,
+                           s.arrival,
+                           s.datetime as flight_datetime
+                    FROM bookings b
+                             LEFT JOIN users u ON b.user_id = u.id
+                             LEFT JOIN schedule s ON b.flight_number = s.flight_number
+                    WHERE b.id = %s
+                    ''', (booking_id,))
+    booking = cursor.fetchone()
 
     if not booking:
         return jsonify({'error': 'Booking not found'}), 404
@@ -99,10 +102,11 @@ def get_booking_detail(booking_id):
 
                 for service_name in service_names:
                     if service_name:
-                        pax_info = db.execute(
-                            'SELECT name, price FROM pax_service WHERE name = ?',
+                        cursor.execute(
+                            'SELECT name, price FROM pax_service WHERE name = %s',
                             (service_name,)
-                        ).fetchone()
+                        )
+                        pax_info = cursor.fetchone()
 
                         if pax_info:
                             pax_services.append({
@@ -117,10 +121,11 @@ def get_booking_detail(booking_id):
 
             elif isinstance(pax_service_data, str) and pax_service_data.strip():
                 service_name = pax_service_data.strip()
-                pax_info = db.execute(
-                    'SELECT name, price FROM pax_service WHERE name = ?',
+                cursor.execute(
+                    'SELECT name, price FROM pax_service WHERE name = %s',
                     (service_name,)
-                ).fetchone()
+                )
+                pax_info = cursor.fetchone()
 
                 if pax_info:
                     pax_services.append({
@@ -157,17 +162,18 @@ def get_booking_detail(booking_id):
         'flight_datetime': booking['flight_datetime']
     })
 
-
 @admin_bookings_bp.route('/bookings/<booking_id>', methods=['PUT'])
 @admin_required
 def update_booking(booking_id):
     db = get_db()
+    cursor = db.cursor(dictionary=True)
     data = request.get_json()
 
-    booking = db.execute(
-        'SELECT id FROM bookings WHERE id = ?',
+    cursor.execute(
+        'SELECT id FROM bookings WHERE id = %s',
         (booking_id,)
-    ).fetchone()
+    )
+    booking = cursor.fetchone()
 
     if not booking:
         return jsonify({'error': 'Booking not found'}), 404
@@ -179,7 +185,7 @@ def update_booking(booking_id):
 
     for field in allowed_fields:
         if field in data:
-            update_fields.append(f'{field} = ?')
+            update_fields.append(f'{field} = %s')
             params.append(data[field])
 
     if not update_fields:
@@ -187,10 +193,10 @@ def update_booking(booking_id):
 
     params.append(booking_id)
 
-    query = f'UPDATE bookings SET {", ".join(update_fields)} WHERE id = ?'
+    query = f'UPDATE bookings SET {", ".join(update_fields)} WHERE id = %s'
 
     try:
-        db.execute(query, params)
+        cursor.execute(query, params)
         db.commit()
         return jsonify({'message': 'Booking updated successfully'})
     except Exception as e:

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from services.utils import login_required
-import sqlite3
+from database import get_db
 import json
 from datetime import datetime
 from services.db_utils import handle_db_locks
@@ -16,35 +16,34 @@ def get_flight_configs_by_type(config_type):
         if config_type not in valid_types:
             return jsonify({"error": "Invalid config type"}), 400
 
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
+        cursor.execute('''
                   SELECT id, name, type, data, description, created_at, updated_at
                   FROM flight_configs
-                  WHERE type = ?
+                  WHERE type = %s
                     AND is_active = 1
                   ORDER BY name
                   ''', (config_type,))
 
-        configs = c.fetchall()
-        conn.close()
+        configs = cursor.fetchall()
 
         result_configs = []
         for config in configs:
             try:
-                data = json.loads(config[3]) if config[3] else {}
+                data = json.loads(config['data']) if config['data'] else {}
             except:
                 data = {}
 
             result_configs.append({
-                'id': config[0],
-                'name': config[1],
-                'type': config[2],
+                'id': config['id'],
+                'name': config['name'],
+                'type': config['type'],
                 'data': data,
-                'description': config[4],
-                'created_at': config[5],
-                'updated_at': config[6]
+                'description': config['description'],
+                'created_at': config['created_at'],
+                'updated_at': config['updated_at']
             })
 
         return jsonify({
@@ -59,7 +58,6 @@ def get_flight_configs_by_type(config_type):
             'success': False,
             'error': 'Failed to load configurations'
         }), 500
-
 
 @flight_configs_bp.route('/post/flight_config', methods=['POST'])
 @login_required
@@ -82,26 +80,25 @@ def create_flight_config():
         if data['type'] not in valid_types:
             return jsonify({"error": "Invalid config type"}), 400
 
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
+        cursor.execute('''
                   SELECT id
                   FROM flight_configs
-                  WHERE name = ?
-                    AND type = ?
+                  WHERE name = %s
+                    AND type = %s
                     AND is_active = 1
                   ''', (data['name'], data['type']))
 
-        if c.fetchone():
-            conn.close()
+        if cursor.fetchone():
             return jsonify({"error": "Config with this name and type already exists"}), 409
 
         timestamp = int(datetime.now().timestamp())
 
-        c.execute('''
+        cursor.execute('''
                   INSERT INTO flight_configs (name, type, data, description, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?)
+                  VALUES (%s, %s, %s, %s, %s, %s)
                   ''', (
                       data['name'],
                       data['type'],
@@ -111,9 +108,8 @@ def create_flight_config():
                       timestamp
                   ))
 
-        config_id = c.lastrowid
-        conn.commit()
-        conn.close()
+        config_id = cursor.lastrowid
+        db.commit()
 
         return jsonify({
             "success": True,
@@ -124,7 +120,6 @@ def create_flight_config():
     except Exception as e:
         print(f"Error creating flight config: {e}")
         return jsonify({"error": "Something went wrong"}), 500
-
 
 @flight_configs_bp.route('/put/flight_config/<int:config_id>', methods=['PUT'])
 @login_required
@@ -138,12 +133,11 @@ def update_flight_config(config_id):
         return jsonify({"error": "No JSON data received"}), 400
 
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('SELECT id FROM flight_configs WHERE id = ? AND is_active = 1', (config_id,))
-        if not c.fetchone():
-            conn.close()
+        cursor.execute('SELECT id FROM flight_configs WHERE id = %s AND is_active = 1', (config_id,))
+        if not cursor.fetchone():
             return jsonify({"error": "Config not found"}), 404
 
         update_fields = []
@@ -151,40 +145,37 @@ def update_flight_config(config_id):
         timestamp = int(datetime.now().timestamp())
 
         if 'name' in data:
-            c.execute('''
+            cursor.execute('''
                       SELECT id
                       FROM flight_configs
-                      WHERE name = ?
-                        AND type = (SELECT type FROM flight_configs WHERE id = ?)
-                        AND id != ? AND is_active = 1
+                      WHERE name = %s
+                        AND type = (SELECT type FROM flight_configs WHERE id = %s)
+                        AND id != %s AND is_active = 1
                       ''', (data['name'], config_id, config_id))
 
-            if c.fetchone():
-                conn.close()
+            if cursor.fetchone():
                 return jsonify({"error": "Config with this name already exists for this type"}), 409
 
-            update_fields.append("name = ?")
+            update_fields.append("name = %s")
             update_values.append(data['name'])
 
         if 'data' in data:
-            update_fields.append("data = ?")
+            update_fields.append("data = %s")
             update_values.append(json.dumps(data['data']))
 
         if 'description' in data:
-            update_fields.append("description = ?")
+            update_fields.append("description = %s")
             update_values.append(data['description'])
 
-        update_fields.append("updated_at = ?")
+        update_fields.append("updated_at = %s")
         update_values.append(timestamp)
 
         if update_fields:
             update_values.append(config_id)
-            update_query = f"UPDATE flight_configs SET {', '.join(update_fields)} WHERE id = ?"
-            c.execute(update_query, update_values)
+            update_query = f"UPDATE flight_configs SET {', '.join(update_fields)} WHERE id = %s"
+            cursor.execute(update_query, update_values)
 
-        conn.commit()
-        conn.close()
-
+        db.commit()
         return jsonify({
             "success": True,
             "message": "Config updated successfully"
@@ -194,7 +185,6 @@ def update_flight_config(config_id):
         print(f"Error updating flight config: {e}")
         return jsonify({"error": "Something went wrong"}), 500
 
-
 @flight_configs_bp.route('/delete/flight_config/<int:config_id>', methods=['DELETE'])
 @login_required
 @handle_db_locks(max_retries=5)
@@ -203,17 +193,15 @@ def delete_flight_config(config_id):
         return jsonify({"error": "Admin access required"}), 403
 
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('SELECT id FROM flight_configs WHERE id = ? AND is_active = 1', (config_id,))
-        if not c.fetchone():
-            conn.close()
+        cursor.execute('SELECT id FROM flight_configs WHERE id = %s AND is_active = 1', (config_id,))
+        if not cursor.fetchone():
             return jsonify({"error": "Config not found"}), 404
 
-        c.execute('UPDATE flight_configs SET is_active = 0 WHERE id = ?', (config_id,))
-        conn.commit()
-        conn.close()
+        cursor.execute('UPDATE flight_configs SET is_active = 0 WHERE id = %s', (config_id,))
+        db.commit()
 
         return jsonify({
             "success": True,
@@ -224,7 +212,6 @@ def delete_flight_config(config_id):
         print(f"Error deleting flight config: {e}")
         return jsonify({"error": "Something went wrong"}), 500
 
-
 @flight_configs_bp.route('/get/flight_configs', methods=['GET'])
 @login_required
 @handle_db_locks(max_retries=5)
@@ -233,34 +220,33 @@ def get_all_flight_configs():
         return jsonify({"error": "Admin access required"}), 403
 
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
+        cursor.execute('''
                   SELECT id, name, type, data, description, created_at, updated_at
                   FROM flight_configs
                   WHERE is_active = 1
                   ORDER BY type, name
                   ''')
 
-        configs = c.fetchall()
-        conn.close()
+        configs = cursor.fetchall()
 
         result_configs = []
         for config in configs:
             try:
-                data = json.loads(config[3]) if config[3] else {}
+                data = json.loads(config['data']) if config['data'] else {}
             except:
                 data = {}
 
             result_configs.append({
-                'id': config[0],
-                'name': config[1],
-                'type': config[2],
+                'id': config['id'],
+                'name': config['name'],
+                'type': config['type'],
                 'data': data,
-                'description': config[4],
-                'created_at': config[5],
-                'updated_at': config[6]
+                'description': config['description'],
+                'created_at': config['created_at'],
+                'updated_at': config['updated_at']
             })
 
         return jsonify({
@@ -275,15 +261,14 @@ def get_all_flight_configs():
             'error': 'Failed to load configurations'
         }), 500
 
-
 @flight_configs_bp.route('/get/boarding_styles', methods=['GET'])
 @handle_db_locks(max_retries=5)
 def get_boarding_styles():
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
+        cursor.execute('''
                   SELECT id, name, type, data, description
                   FROM flight_configs
                   WHERE type = 'boarding_style'
@@ -291,8 +276,7 @@ def get_boarding_styles():
                   ORDER BY name
                   ''')
 
-        db_styles = c.fetchall()
-        conn.close()
+        db_styles = cursor.fetchall()
 
         styles = []
 
@@ -306,12 +290,12 @@ def get_boarding_styles():
 
         for style in db_styles:
             try:
-                data = json.loads(style[3]) if style[3] else {}
+                data = json.loads(style['data']) if style['data'] else {}
                 styles.append({
-                    'id': style[0],
-                    'name': style[1],
+                    'id': style['id'],
+                    'name': style['name'],
                     'type': 'custom',
-                    'description': style[4] or '',
+                    'description': style['description'] or '',
                     'draw_function': data.get('draw_function', 'default'),
                     'background_image': data.get('background_image', ''),
                     'background_url': data.get('background_url', ''),

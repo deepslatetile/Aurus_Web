@@ -1,6 +1,6 @@
 from flask import Blueprint, redirect, request, session, jsonify
 import requests
-import sqlite3
+from database import get_db
 import secrets
 from datetime import datetime
 from urllib.parse import urlencode
@@ -8,7 +8,6 @@ from services.utils import login_required
 from services.db_utils import handle_db_locks
 
 discord_bp = Blueprint('discord', __name__)
-
 
 @discord_bp.route('/discord')
 @handle_db_locks(max_retries=5)
@@ -27,7 +26,6 @@ def auth_discord():
 
     auth_url = f"{app.config['DISCORD_AUTH_URL']}?{urlencode(params)}"
     return redirect(auth_url)
-
 
 @discord_bp.route('/discord/callback')
 @handle_db_locks(max_retries=5)
@@ -70,38 +68,37 @@ def auth_discord_callback():
         user_response.raise_for_status()
         discord_user = user_response.json()
 
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
+        cursor.execute('''
                   SELECT user_id
                   FROM oauth_connections
-                  WHERE provider = ?
-                    AND provider_user_id = ?
-                    AND user_id != ?
+                  WHERE provider = %s
+                    AND provider_user_id = %s
+                    AND user_id != %s
                   ''', ('discord', discord_user['id'], user_id))
 
-        existing_connection = c.fetchone()
+        existing_connection = cursor.fetchone()
         if existing_connection:
-            conn.close()
             return redirect('/profile?error=discord_already_linked')
 
-        c.execute('''
+        cursor.execute('''
                   SELECT id
                   FROM oauth_connections
-                  WHERE user_id = ?
+                  WHERE user_id = %s
                     AND provider = 'discord'
                   ''', (user_id,))
 
-        current_connection = c.fetchone()
+        current_connection = cursor.fetchone()
 
         if current_connection:
-            c.execute('''
+            cursor.execute('''
                       UPDATE oauth_connections
-                      SET access_token  = ?,
-                          refresh_token = ?,
-                          expires_at    = ?
-                      WHERE user_id = ?
+                      SET access_token  = %s,
+                          refresh_token = %s,
+                          expires_at    = %s
+                      WHERE user_id = %s
                         AND provider = 'discord'
                       ''', (
                           access_token,
@@ -110,10 +107,10 @@ def auth_discord_callback():
                           user_id
                       ))
         else:
-            c.execute('''
+            cursor.execute('''
                       INSERT INTO oauth_connections (user_id, provider, provider_user_id, access_token, refresh_token,
                                                      expires_at, created_at)
-                      VALUES (?, ?, ?, ?, ?, ?, ?)
+                      VALUES (%s, %s, %s, %s, %s, %s, %s)
                       ''', (
                           user_id,
                           'discord',
@@ -124,14 +121,13 @@ def auth_discord_callback():
                           int(datetime.now().timestamp())
                       ))
 
-        c.execute('''
+        cursor.execute('''
                   UPDATE users
-                  SET social_id = ?
-                  WHERE id = ?
+                  SET social_id = %s
+                  WHERE id = %s
                   ''', (discord_user['id'], user_id))
 
-        conn.commit()
-        conn.close()
+        db.commit()
         return redirect('/profile?success=discord_linked')
 
     except requests.RequestException as e:
@@ -141,54 +137,51 @@ def auth_discord_callback():
         print(f"Unexpected error: {e}")
         return redirect('/profile?error=discord_unexpected_error')
 
-
 @discord_bp.route('/discord/connection', methods=['GET', 'DELETE'])
 @login_required
 @handle_db_locks(max_retries=5)
 def discord_connection():
     user_id = session['user_id']
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
         if request.method == 'GET':
-            c.execute('''
+            cursor.execute('''
                       SELECT provider_user_id, created_at, expires_at
                       FROM oauth_connections
-                      WHERE user_id = ?
+                      WHERE user_id = %s
                         AND provider = 'discord'
                       ''', (user_id,))
 
-            connection = c.fetchone()
-            conn.close()
+            connection = cursor.fetchone()
 
             if connection:
                 return jsonify({
                     "connected": True,
-                    "provider_user_id": connection[0],
-                    "connected_at": connection[1],
-                    "expires_at": connection[2]
+                    "provider_user_id": connection['provider_user_id'],
+                    "connected_at": connection['created_at'],
+                    "expires_at": connection['expires_at']
                 }), 200
             else:
                 return jsonify({"connected": False}), 200
 
         elif request.method == 'DELETE':
-            c.execute('''
+            cursor.execute('''
                       DELETE
                       FROM oauth_connections
-                      WHERE user_id = ?
+                      WHERE user_id = %s
                         AND provider = 'discord'
                       ''', (user_id,))
 
-            c.execute('''
+            cursor.execute('''
                       UPDATE users 
                       SET social_id = NULL 
-                      WHERE id = ?
+                      WHERE id = %s
                       ''', (user_id,))
 
-            deleted_count = c.rowcount
-            conn.commit()
-            conn.close()
+            deleted_count = cursor.rowcount
+            db.commit()
 
             if deleted_count > 0:
                 return jsonify({"message": "Discord connection removed successfully"}), 200
@@ -199,31 +192,28 @@ def discord_connection():
         print(f"Discord connection error: {e}")
         return jsonify({"error": "Something went wrong"}), 500
 
-
 @discord_bp.route('/discord/userinfo', methods=['GET'])
 @login_required
 @handle_db_locks(max_retries=5)
 def discord_userinfo():
     user_id = session['user_id']
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
+        cursor.execute('''
                   SELECT access_token, expires_at
                   FROM oauth_connections
-                  WHERE user_id = ?
+                  WHERE user_id = %s
                     AND provider = 'discord'
                   ''', (user_id,))
 
-        connection = c.fetchone()
+        connection = cursor.fetchone()
         if not connection:
-            conn.close()
             return jsonify({"error": "Discord account not connected"}), 404
 
-        access_token, expires_at = connection
+        access_token, expires_at = connection['access_token'], connection['expires_at']
         if expires_at and expires_at < datetime.now().timestamp():
-            conn.close()
             return jsonify({"error": "Discord token expired, please reconnect"}), 401
 
         headers = {'Authorization': f'Bearer {access_token}'}
@@ -231,11 +221,9 @@ def discord_userinfo():
         user_response = requests.get(f'{DISCORD_API_URL}/users/@me', headers=headers)
 
         if user_response.status_code != 200:
-            conn.close()
             return jsonify({"error": "Failed to fetch Discord user info"}), 500
 
         discord_user = user_response.json()
-        conn.close()
 
         return jsonify({
             "discord_user": {
@@ -250,32 +238,30 @@ def discord_userinfo():
         print(f"Discord userinfo error: {e}")
         return jsonify({"error": "Something went wrong"}), 500
 
-
 @discord_bp.route('/discord/disconnect', methods=['POST'])
 @login_required
 @handle_db_locks(max_retries=5)
 def discord_disconnect():
     user_id = session['user_id']
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
+        cursor.execute('''
                   DELETE
                   FROM oauth_connections
-                  WHERE user_id = ?
+                  WHERE user_id = %s
                     AND provider = 'discord'
                   ''', (user_id,))
 
-        c.execute('''
+        cursor.execute('''
                   UPDATE users 
                   SET social_id = 0 
-                  WHERE id = ?
+                  WHERE id = %s
                   ''', (user_id,))
 
-        deleted_count = c.rowcount
-        conn.commit()
-        conn.close()
+        deleted_count = cursor.rowcount
+        db.commit()
 
         if deleted_count > 0:
             return jsonify({"message": "Discord account disconnected successfully"}), 200
@@ -286,27 +272,25 @@ def discord_disconnect():
         print(f"Discord disconnect error: {e}")
         return jsonify({"error": "Failed to disconnect Discord account"}), 500
 
-
 def get_discord_user_roles(user_id, guild_id):
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
+        cursor.execute('''
                   SELECT access_token, expires_at
                   FROM oauth_connections
-                  WHERE user_id = ?
+                  WHERE user_id = %s
                     AND provider = 'discord'
                   ''', (user_id,))
 
-        connection = c.fetchone()
-        conn.close()
+        connection = cursor.fetchone()
 
         if not connection:
             print(f"No Discord connection found for user {user_id}")
             return None
 
-        access_token, expires_at = connection
+        access_token, expires_at = connection['access_token'], connection['expires_at']
         if expires_at and expires_at < datetime.now().timestamp():
             print(f"Discord token expired for user {user_id}")
             return None
@@ -363,7 +347,6 @@ def get_discord_user_roles(user_id, guild_id):
     except Exception as e:
         print(f"Error getting Discord roles: {e}")
         return None
-
 
 @discord_bp.route('/api/internal/discord_roles/<guild_id>', methods=['GET'])
 @login_required

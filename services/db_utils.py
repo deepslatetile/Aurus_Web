@@ -1,7 +1,7 @@
-import sqlite3
 import time
 from functools import wraps
 from flask import jsonify
+from mysql.connector import Error
 
 def handle_db_locks(max_retries=3):
     def decorator(f):
@@ -10,8 +10,8 @@ def handle_db_locks(max_retries=3):
             for attempt in range(max_retries):
                 try:
                     return f(*args, **kwargs)
-                except sqlite3.OperationalError as e:
-                    if "locked" in str(e) and attempt < max_retries - 1:
+                except Error as e:
+                    if attempt < max_retries - 1:
                         time.sleep(0.5 * (attempt + 1))
                         continue
                     else:

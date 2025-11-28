@@ -7,7 +7,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 from config import init_app
-from database import init_db, get_db
+from database import init_db, get_db, close_db
 from auth.routes import auth_bp
 from auth.discord_oauth import discord_bp
 from auth.roblox_oauth import roblox_bp
@@ -27,7 +27,12 @@ from admin.admin_users import admin_users_bp
 app = Flask(__name__)
 app = init_app(app)
 
-init_db()
+# Регистрируем закрытие базы данных
+app.teardown_appcontext(close_db)
+
+# Инициализируем базу данных при запуске приложения
+with app.app_context():
+    init_db()
 
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(discord_bp, url_prefix='/auth')
@@ -44,7 +49,6 @@ app.register_blueprint(flight_configs_bp, url_prefix='/api')
 app.register_blueprint(admin_bookings_bp, url_prefix='/admin/api')
 app.register_blueprint(admin_weather_bp, url_prefix='/admin/api')
 app.register_blueprint(admin_users_bp, url_prefix='/admin/api')
-
 
 @app.route('/static/fonts/<path:filename>')
 def serve_fonts(filename):
@@ -76,38 +80,31 @@ def discord_auth_redirect():
         return redirect('/login?redirect=/auth/discord')
     return redirect('/auth/discord')
 
-
 @app.route('/auth/roblox')
 def roblox_auth_redirect():
     if 'user_id' not in session:
         return redirect('/login?redirect=/auth/roblox')
     return redirect('/auth/roblox')
 
-
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
-
 
 @app.route('/login', methods=['GET'])
 def login():
     return render_template('login.html')
 
-
 @app.route('/schedule', methods=['GET'])
 def schedule():
     return render_template('schedule.html')
-
 
 @app.route('/tos', methods=['GET'])
 def tos():
     return render_template('tos.html')
 
-
 @app.route('/privacy-policy', methods=['GET'])
 def privacy_policy():
     return render_template('privacy-policy.html')
-
 
 @app.route('/profile')
 def profile_page():
@@ -115,11 +112,9 @@ def profile_page():
         return redirect('/login')
     return render_template('profile.html')
 
-
 @app.route('/book', methods=['GET'])
 def book_page():
     return render_template('book.html')
-
 
 @app.route('/admin/bookings', methods=['GET'])
 def admin_bookings():
@@ -127,16 +122,17 @@ def admin_bookings():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_bookings.html')
-
 
 @app.route('/admin/payments', methods=['GET'])
 def admin_payments():
@@ -144,16 +140,17 @@ def admin_payments():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_payments.html')
-
 
 @app.route('/admin/create_flight', methods=['GET'])
 def admin_create_flight():
@@ -161,16 +158,17 @@ def admin_create_flight():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_create_flight.html')
-
 
 @app.route('/admin/flight_configs', methods=['GET'])
 def admin_flight_configs():
@@ -178,16 +176,17 @@ def admin_flight_configs():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_flight_configs.html')
-
 
 @app.route('/admin/meals', methods=['GET'])
 def admin_meals():
@@ -195,16 +194,17 @@ def admin_meals():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_meals.html')
-
 
 @app.route('/admin/edit_flight', methods=['GET'])
 def admin_edit_flight():
@@ -212,21 +212,21 @@ def admin_edit_flight():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_edit_flight.html')
 
-
 @app.route('/menu', methods=['GET'])
 def menu():
     return render_template('menu.html')
-
 
 @app.route('/admin', methods=['GET'])
 def admin_dashboard():
@@ -234,16 +234,17 @@ def admin_dashboard():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_dashboard.html')
-
 
 @app.route('/admin/web_configs', methods=['GET'])
 def admin_web_configs():
@@ -251,16 +252,17 @@ def admin_web_configs():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_web_configs.html')
-
 
 @app.route('/admin/phrases', methods=['GET'])
 def admin_phrases():
@@ -268,10 +270,12 @@ def admin_phrases():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group, nickname FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group, nickname FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
@@ -280,23 +284,23 @@ def admin_phrases():
 
     return render_template('admin_phrases.html')
 
-
 @app.route('/admin/weather', methods=['GET'])
 def admin_weather():
     if 'user_id' not in session:
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_weather.html')
-
 
 @app.route('/admin/users', methods=['GET'])
 def admin_users():
@@ -304,16 +308,17 @@ def admin_users():
         return redirect('/login')
 
     db = get_db()
-    user = db.execute(
-        'SELECT user_group FROM users WHERE id = ?',
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
         (session['user_id'],)
-    ).fetchone()
+    )
+    user = cursor.fetchone()
 
     if not user or user['user_group'] not in ['HQ', 'STF']:
         return redirect('/')
 
     return render_template('admin_users.html')
-
 
 def check_environment():
     # TODO

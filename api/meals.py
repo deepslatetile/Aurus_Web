@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from services.utils import login_required
-import sqlite3
+from database import get_db
 from services.db_utils import handle_db_locks
 
 meals_bp = Blueprint('meals', __name__)
@@ -9,13 +9,11 @@ meals_bp = Blueprint('meals', __name__)
 @handle_db_locks(max_retries=5)
 def get_meals_by_class(serve_class):
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM meals WHERE serve_class = ? ORDER BY id", (serve_class,))
-        meals = c.fetchall()
-
-        conn.close()
+        cursor.execute("SELECT * FROM meals WHERE serve_class = %s ORDER BY id", (serve_class,))
+        meals = cursor.fetchall()
 
         if not meals:
             return jsonify([]), 200
@@ -23,12 +21,12 @@ def get_meals_by_class(serve_class):
         response = []
         for meal in meals:
             response.append({
-                "id": meal[0],
-                "serve_class": meal[1],
-                "serve_time": meal[2],
-                "name": meal[3],
-                "description": meal[4] if meal[4] is not None else "",
-                "image": meal[5]
+                "id": meal['id'],
+                "serve_class": meal['serve_class'],
+                "serve_time": meal['serve_time'],
+                "name": meal['name'],
+                "description": meal['description'] if meal['description'] is not None else "",
+                "image": meal['image']
             })
 
         return jsonify(response), 200
@@ -59,13 +57,13 @@ def post_meal():
         description = data.get('description', '')
         image = data.get('image', None)
 
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute('''
+        cursor.execute('''
             INSERT INTO meals (
                 serve_class, serve_time, name, description, image
-            ) VALUES (?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s)
         ''', (
             data['serve_class'],
             data['serve_time'],
@@ -74,9 +72,8 @@ def post_meal():
             image
         ))
 
-        meal_id = c.lastrowid
-        conn.commit()
-        conn.close()
+        meal_id = cursor.lastrowid
+        db.commit()
 
         return jsonify({
             "message": "Meal created successfully",
@@ -92,18 +89,17 @@ def post_meal():
 @handle_db_locks(max_retries=5)
 def delete_meal(meal_id):
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM meals WHERE id = ?", (meal_id,))
-        meal = c.fetchone()
+        cursor.execute("SELECT * FROM meals WHERE id = %s", (meal_id,))
+        meal = cursor.fetchone()
 
         if not meal:
             return jsonify({"error": "Meal not found"}), 404
 
-        c.execute("DELETE FROM meals WHERE id = ?", (meal_id,))
-        conn.commit()
-        conn.close()
+        cursor.execute("DELETE FROM meals WHERE id = %s", (meal_id,))
+        db.commit()
 
         return jsonify({"message": f"Meal {meal_id} deleted successfully"}), 200
 
@@ -111,18 +107,15 @@ def delete_meal(meal_id):
         print(e)
         return jsonify({"error": "Something went wrong"}), 500
 
-
 @meals_bp.route('/get/all_meals', methods=['GET'])
 @handle_db_locks(max_retries=5)
 def get_all_meals():
     try:
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM meals ORDER BY serve_class, serve_time, id")
-        meals = c.fetchall()
-
-        conn.close()
+        cursor.execute("SELECT * FROM meals ORDER BY serve_class, serve_time, id")
+        meals = cursor.fetchall()
 
         if not meals:
             return jsonify([]), 200
@@ -130,12 +123,12 @@ def get_all_meals():
         response = []
         for meal in meals:
             response.append({
-                "id": meal[0],
-                "serve_class": meal[1],
-                "serve_time": meal[2],
-                "name": meal[3],
-                "description": meal[4] if meal[4] is not None else "",
-                "image": meal[5]
+                "id": meal['id'],
+                "serve_class": meal['serve_class'],
+                "serve_time": meal['serve_time'],
+                "name": meal['name'],
+                "description": meal['description'] if meal['description'] is not None else "",
+                "image": meal['image']
             })
 
         return jsonify(response), 200

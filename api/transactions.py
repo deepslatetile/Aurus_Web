@@ -3,10 +3,8 @@ from database import get_db, execute_with_retry
 from services.utils import login_required
 from datetime import datetime
 import time
-import sqlite3
 
 transactions_bp = Blueprint('transactions', __name__)
-
 
 def check_admin_permissions():
     user_id = session.get('user_id')
@@ -14,16 +12,15 @@ def check_admin_permissions():
         return False, "Not authenticated"
 
     try:
-        # Используем безопасное выполнение с повторными попытками
         result = execute_with_retry(
-            'SELECT user_group FROM users WHERE id = ?',
+            'SELECT user_group FROM users WHERE id = %s',
             (user_id,)
         )
 
         if not result:
             return False, "User not found"
 
-        user_group = result.fetchone()[0]
+        user_group = result.fetchone()['user_group']
 
         if user_group not in ['HQ', 'STF']:
             return False, f"Admin access required. Your group: {user_group}"
@@ -32,7 +29,6 @@ def check_admin_permissions():
 
     except Exception as e:
         return False, f"Permission check failed: {str(e)}"
-
 
 @transactions_bp.route('/post/transaction', methods=['POST'])
 @login_required
@@ -51,9 +47,8 @@ def create_transaction():
             return jsonify({"error": f"Missing required field: {field}"}), 400
 
     try:
-        # Проверяем существование пользователя
         user_result = execute_with_retry(
-            'SELECT id, nickname FROM users WHERE id = ?',
+            'SELECT id, nickname FROM users WHERE id = %s',
             (data['user_id'],)
         )
         user = user_result.fetchone()
@@ -63,7 +58,7 @@ def create_transaction():
 
         if data.get('booking_id'):
             booking_result = execute_with_retry(
-                'SELECT id, flight_number FROM bookings WHERE id = ?',
+                'SELECT id, flight_number FROM bookings WHERE id = %s',
                 (data['booking_id'],)
             )
             booking = booking_result.fetchone()
@@ -75,11 +70,10 @@ def create_transaction():
         if not isinstance(amount, (int, float)) or abs(amount) > 1000000:
             return jsonify({"error": "Invalid amount"}), 400
 
-        # Создаем транзакцию с безопасным выполнением
         execute_with_retry(''' \
                            INSERT INTO transactions (user_id, booking_id, amount, description, type, admin_user_id,
                                                      created_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s)
                            ''', (
                                data['user_id'],
                                data.get('booking_id'),
@@ -102,16 +96,9 @@ def create_transaction():
             }
         }), 201
 
-    except sqlite3.OperationalError as e:
-        if "locked" in str(e):
-            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
-        else:
-            print(f"Database error in transaction creation: {e}")
-            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Transaction creation error: {e}")
         return jsonify({"error": "Internal server error"}), 500
-
 
 @transactions_bp.route('/get/transactions/user/<int:user_id>', methods=['GET'])
 @login_required
@@ -123,12 +110,11 @@ def get_user_transactions(user_id):
         if user_id != current_user_id and current_user_group not in ['HQ', 'STF']:
             return jsonify({"error": "Access denied"}), 403
 
-        # Используем безопасное выполнение с повторными попытками
         result = execute_with_retry(''' \
                                     SELECT t.*, u.nickname as admin_nickname
                                     FROM transactions t
                                              LEFT JOIN users u ON t.admin_user_id = u.id
-                                    WHERE t.user_id = ?
+                                    WHERE t.user_id = %s
                                     ORDER BY t.created_at DESC
                                     ''', (user_id,))
 
@@ -151,16 +137,9 @@ def get_user_transactions(user_id):
 
         return jsonify(result_list), 200
 
-    except sqlite3.OperationalError as e:
-        if "locked" in str(e):
-            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
-        else:
-            print(f"Database error in get transactions: {e}")
-            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Get transactions error: {e}")
         return jsonify({"error": "Internal server error"}), 500
-
 
 @transactions_bp.route('/get/transactions/booking/<booking_id>', methods=['GET'])
 @login_required
@@ -170,12 +149,11 @@ def get_booking_transactions(booking_id):
         if not has_permission:
             return jsonify({"error": message}), 403
 
-        # Используем безопасное выполнение с повторными попытками
         result = execute_with_retry(''' \
                                     SELECT t.*, u.nickname as admin_nickname
                                     FROM transactions t
                                              LEFT JOIN users u ON t.admin_user_id = u.id
-                                    WHERE t.booking_id = ?
+                                    WHERE t.booking_id = %s
                                     ORDER BY t.created_at DESC
                                     ''', (booking_id,))
 
@@ -198,12 +176,6 @@ def get_booking_transactions(booking_id):
 
         return jsonify(result_list), 200
 
-    except sqlite3.OperationalError as e:
-        if "locked" in str(e):
-            return jsonify({"error": "Database is temporarily busy, please try again"}), 503
-        else:
-            print(f"Database error in get booking transactions: {e}")
-            return jsonify({"error": "Database error"}), 500
     except Exception as e:
         print(f"Get booking transactions error: {e}")
         return jsonify({"error": "Internal server error"}), 500

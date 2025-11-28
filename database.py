@@ -1,17 +1,27 @@
-import sqlite3
+import mysql.connector
 from flask import g
 import os
+from mysql.connector import Error
 import time
+
 
 def get_db():
     if 'db' not in g:
-        database_url = os.getenv('DATABASE_URL', 'airline.db')
-        g.db = sqlite3.connect(database_url, timeout=15.0)
-        g.db.execute('PRAGMA journal_mode=DELETE')
-        g.db.execute('PRAGMA synchronous=NORMAL')
-        g.db.execute('PRAGMA busy_timeout=15000')
-        g.db.row_factory = sqlite3.Row
+        try:
+            g.db = mysql.connector.connect(
+                host=os.getenv('MYSQL_HOST', 'yourusername.mysql.pythonanywhere-services.com'),
+                user=os.getenv('MYSQL_USER', 'yourusername'),
+                password=os.getenv('MYSQL_PASSWORD', 'your_mysql_password'),
+                database=os.getenv('MYSQL_DB', 'yourusername$default'),
+                autocommit=True,
+                charset='utf8mb4',
+                collation='utf8mb4_unicode_ci'
+            )
+        except Error as e:
+            print(f"Database connection error: {e}")
+            raise
     return g.db
+
 
 def close_db(e=None):
     db = g.pop('db', None)
@@ -21,15 +31,16 @@ def close_db(e=None):
         except:
             pass
 
+
 def execute_with_retry(query, params=(), max_retries=3):
     for attempt in range(max_retries):
         try:
             db = get_db()
-            cursor = db.execute(query, params)
-            db.commit()
+            cursor = db.cursor(dictionary=True)
+            cursor.execute(query, params)
             return cursor
-        except sqlite3.OperationalError as e:
-            if "locked" in str(e) and attempt < max_retries - 1:
+        except Error as e:
+            if attempt < max_retries - 1:
                 time.sleep(0.5 * (attempt + 1))
                 continue
             else:
@@ -37,225 +48,408 @@ def execute_with_retry(query, params=(), max_retries=3):
 
 
 def init_db():
-    max_retries = 5
-    for attempt in range(max_retries):
-        try:
-            conn = sqlite3.connect(os.getenv('DATABASE_URL', 'airline.db'), timeout=15.0)
-            conn.execute('PRAGMA journal_mode=DELETE')
-            conn.execute('PRAGMA synchronous=NORMAL')
+    """Инициализация базы данных - создание таблиц если их нет"""
+    try:
+        # Создаем отдельное соединение для инициализации, не используем g
+        conn = mysql.connector.connect(
+            host=os.getenv('MYSQL_HOST', 'yourusername.mysql.pythonanywhere-services.com'),
+            user=os.getenv('MYSQL_USER', 'yourusername'),
+            password=os.getenv('MYSQL_PASSWORD', 'your_mysql_password'),
+            database=os.getenv('MYSQL_DB', 'yourusername$default'),
+            charset='utf8mb4',
+            collation='utf8mb4_unicode_ci'
+        )
+        cursor = conn.cursor()
 
-            cursor = conn.cursor()
-
-            # Schedule table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS schedule
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    flight_number TEXT NOT NULL,
-                    created_at INTEGER NOT NULL,
-                    departure TEXT NOT NULL,
-                    arrival TEXT NOT NULL,
-                    datetime INTEGER NOT NULL,
-                    enroute TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    seatmap TEXT NOT NULL,
-                    aircraft TEXT NOT NULL,
-                    meal TEXT NOT NULL,
-                    pax_service TEXT NOT NULL,
-                    boarding_pass_default TEXT NOT NULL
-                )
-            ''')
-
-            # PAX Service table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS pax_service
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    image BLOB,
-                    groupname TEXT NOT NULL,
-                    subgroupname TEXT NOT NULL,
-                    price REAL DEFAULT 0
-                )
-            ''')
-
-            # Bookings table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS bookings
-                (
-                    id TEXT PRIMARY KEY,
-                    flight_number TEXT NOT NULL,
-                    created_at INTEGER NOT NULL,
-                    user_id INTEGER NOT NULL,
-                    seat TEXT NOT NULL,
-                    serve_class TEXT NOT NULL,
-                    pax_service TEXT,
-                    boarding_pass TEXT,
-                    note TEXT,
-                    valid INTEGER,
-                    passenger_name TEXT
-                )
-            ''')
-
-            # Users table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS users
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nickname TEXT NOT NULL,
-                    created_at INTEGER NOT NULL,
-                    virtual_id INTEGER UNIQUE,
-                    social_id INTEGER UNIQUE,
-                    miles INTEGER NOT NULL,
-                    bonuses TEXT,
-                    user_group TEXT NOT NULL,
-                    subgroup TEXT NOT NULL,
-                    link TEXT,
-                    pfp BLOB,
-                    metadata TEXT,
-                    pending TEXT,
-                    status TEXT,
-                    password_hash TEXT NOT NULL,
-                    session_token TEXT
-                )
-            ''')
-
-            # Meals table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS meals
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    serve_class TEXT NOT NULL,
-                    serve_time TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    image BLOB
-                )
-            ''')
-
-            # About us table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS about_us
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    image BLOB,
-                    about_group TEXT NOT NULL,
-                    subgroup TEXT NOT NULL,
-                    link TEXT
-                )
-            ''')
-
-            # Configs table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS configs
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    image BLOB
-                )
-            ''')
-
-            # Web configs table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS web_configs
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    page_name TEXT NOT NULL UNIQUE,
-                    page_display TEXT NOT NULL,
-                    state INTEGER DEFAULT 1,
-                    content TEXT,
-                    last_updated INTEGER
-                )
-            ''')
-
-            # OAuth connections table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS oauth_connections
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    provider TEXT NOT NULL,
-                    provider_user_id TEXT NOT NULL,
-                    access_token TEXT NOT NULL,
-                    refresh_token TEXT,
-                    expires_at INTEGER,
-                    created_at INTEGER NOT NULL,
-                    FOREIGN KEY (user_id) REFERENCES users (id),
-                    UNIQUE (user_id, provider)
-                )
-            ''')
-
-            # Transactions table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS transactions
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    booking_id TEXT,
-                    amount REAL NOT NULL,
-                    description TEXT NOT NULL,
-                    type TEXT NOT NULL,
-                    admin_user_id INTEGER NOT NULL,
-                    created_at INTEGER NOT NULL,
-                    FOREIGN KEY (user_id) REFERENCES users (id),
-                    FOREIGN KEY (admin_user_id) REFERENCES users (id)
-                )
-            ''')
-
-            # Flight Configs table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS flight_configs
-                (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    type TEXT NOT NULL,
-                    data TEXT NOT NULL,
-                    description TEXT,
-                    created_at INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL,
-                    is_active INTEGER DEFAULT 1
-                )
-            ''')
-
-            # Weather Cache table
-            cursor.execute('''
-                           CREATE TABLE IF NOT EXISTS weather_cache
-                           (
-                               icao_code
-                               TEXT
-                               PRIMARY
-                               KEY,
-                               data
-                               TEXT
-                               NOT
-                               NULL,
-                               created_at
-                               INTEGER
-                               NOT
-                               NULL,
-                               expires_at
-                               INTEGER
-                               NOT
-                               NULL
+        # Schedule table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS schedule
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           flight_number
+                           VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           created_at BIGINT NOT NULL,
+                           departure VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           arrival VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           datetime BIGINT NOT NULL,
+                           enroute TEXT NOT NULL,
+                           status VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           seatmap TEXT NOT NULL,
+                           aircraft VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           meal VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           pax_service VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           boarding_pass_default TEXT NOT NULL
                            )
-                           ''')
-            cursor.execute('''
-                           CREATE INDEX IF NOT EXISTS idx_weather_cache_expires
-                               ON weather_cache(expires_at)
-                           ''')
+                       ''')
 
-            conn.commit()
-            conn.close()
-            break
-        except sqlite3.OperationalError as e:
-            if "locked" in str(e) and attempt < max_retries - 1:
-                time.sleep(1)
-                continue
-            else:
-                raise
+        # PAX Service table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS pax_service
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           name
+                           VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           description TEXT,
+                           image LONGBLOB,
+                           groupname VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           subgroupname VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           price DECIMAL
+                       (
+                           10,
+                           2
+                       ) DEFAULT 0
+                           )
+                       ''')
 
-init_db()
+        # Bookings table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS bookings
+                       (
+                           id
+                           VARCHAR
+                       (
+                           255
+                       ) PRIMARY KEY,
+                           flight_number VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           created_at BIGINT NOT NULL,
+                           user_id INT NOT NULL,
+                           seat VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           serve_class VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           pax_service TEXT,
+                           boarding_pass TEXT,
+                           note TEXT,
+                           valid INT,
+                           passenger_name TEXT
+                           )
+                       ''')
+
+        # Users table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS users
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           nickname
+                           VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           created_at BIGINT NOT NULL,
+                           virtual_id INT UNIQUE,
+                           social_id INT UNIQUE,
+                           miles INT NOT NULL,
+                           bonuses TEXT,
+                           user_group VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           subgroup VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           link TEXT,
+                           pfp LONGBLOB,
+                           metadata TEXT,
+                           pending TEXT,
+                           status VARCHAR
+                       (
+                           255
+                       ),
+                           password_hash TEXT NOT NULL,
+                           session_token TEXT
+                           )
+                       ''')
+
+        # Meals table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS meals
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           serve_class
+                           VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           serve_time VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           name VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           description TEXT,
+                           image LONGBLOB
+                           )
+                       ''')
+
+        # About us table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS about_us
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           name
+                           VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           description TEXT NOT NULL,
+                           image LONGBLOB,
+                           about_group VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           subgroup VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           link TEXT
+                           )
+                       ''')
+
+        # Configs table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS configs
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           name
+                           VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           description TEXT NOT NULL,
+                           image LONGBLOB
+                           )
+                       ''')
+
+        # Web configs table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS web_configs
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           page_name
+                           VARCHAR
+                       (
+                           255
+                       ) NOT NULL UNIQUE,
+                           page_display VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           state INT DEFAULT 1,
+                           content TEXT,
+                           last_updated BIGINT
+                           )
+                       ''')
+
+        # OAuth connections table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS oauth_connections
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           user_id
+                           INT
+                           NOT
+                           NULL,
+                           provider
+                           VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           provider_user_id VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           access_token TEXT NOT NULL,
+                           refresh_token TEXT,
+                           expires_at BIGINT,
+                           created_at BIGINT NOT NULL,
+                           FOREIGN KEY
+                       (
+                           user_id
+                       ) REFERENCES users
+                       (
+                           id
+                       ) ON DELETE CASCADE,
+                           UNIQUE
+                       (
+                           user_id,
+                           provider
+                       )
+                           )
+                       ''')
+
+        # Transactions table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS transactions
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           user_id
+                           INT
+                           NOT
+                           NULL,
+                           booking_id
+                           VARCHAR
+                       (
+                           255
+                       ),
+                           amount DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL,
+                           description TEXT NOT NULL,
+                           type VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           admin_user_id INT NOT NULL,
+                           created_at BIGINT NOT NULL,
+                           FOREIGN KEY
+                       (
+                           user_id
+                       ) REFERENCES users
+                       (
+                           id
+                       ) ON DELETE CASCADE,
+                           FOREIGN KEY
+                       (
+                           admin_user_id
+                       ) REFERENCES users
+                       (
+                           id
+                       )
+                         ON DELETE CASCADE
+                           )
+                       ''')
+
+        # Flight Configs table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS flight_configs
+                       (
+                           id
+                           INT
+                           AUTO_INCREMENT
+                           PRIMARY
+                           KEY,
+                           name
+                           VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           type VARCHAR
+                       (
+                           255
+                       ) NOT NULL,
+                           data TEXT NOT NULL,
+                           description TEXT,
+                           created_at BIGINT NOT NULL,
+                           updated_at BIGINT NOT NULL,
+                           is_active INT DEFAULT 1
+                           )
+                       ''')
+
+        # Weather Cache table
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS weather_cache
+                       (
+                           icao_code
+                           VARCHAR
+                       (
+                           255
+                       ) PRIMARY KEY,
+                           data TEXT NOT NULL,
+                           created_at BIGINT NOT NULL,
+                           expires_at BIGINT NOT NULL
+                           )
+                       ''')
+
+        cursor.execute('''
+                       CREATE INDEX IF NOT EXISTS idx_weather_cache_expires
+                           ON weather_cache(expires_at)
+                       ''')
+
+        print("✅ All MySQL tables created successfully")
+        conn.commit()
+        conn.close()
+
+    except Error as e:
+        print(f"❌ Database initialization failed: {e}")
+        raise
+
+# УБЕРИТЕ эту строку - не вызывайте init_db() при импорте!
+# init_db()

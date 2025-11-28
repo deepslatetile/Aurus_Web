@@ -2,9 +2,7 @@ from flask import Blueprint, request, jsonify, session
 from database import get_db
 from services.utils import login_required, generate_booking_id
 from datetime import datetime
-import sqlite3
 from services.db_utils import handle_db_locks
-
 
 bookings_bp = Blueprint('bookings', __name__)
 
@@ -14,46 +12,46 @@ bookings_bp = Blueprint('bookings', __name__)
 def get_booking(id):
     try:
         user_id = session['user_id']
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM bookings WHERE id = ? AND user_id = ?", (id, user_id))
-        booking = c.fetchone()
+        cursor.execute("SELECT * FROM bookings WHERE id = %s AND user_id = %s", (id, user_id))
+        booking = cursor.fetchone()
 
         if not booking:
             return jsonify({"error": "Booking not found"}), 404
 
         booking_info = {
-            "id": str(booking[0]),
-            "flight_number": str(booking[1]),
-            "created_at": int(booking[2]),
-            "user_id": str(booking[3]),
-            "seat": str(booking[4]),
-            "serve_class": str(booking[5]),
-            "pax_service": str(booking[6]) if booking[6] is not None else "",
-            "boarding_pass": str(booking[7]),
-            "note": str(booking[8]) if booking[8] is not None else "",
-            "valid": int(booking[9])
+            "id": str(booking['id']),
+            "flight_number": str(booking['flight_number']),
+            "created_at": int(booking['created_at']),
+            "user_id": str(booking['user_id']),
+            "seat": str(booking['seat']),
+            "serve_class": str(booking['serve_class']),
+            "pax_service": str(booking['pax_service']) if booking['pax_service'] is not None else "",
+            "boarding_pass": str(booking['boarding_pass']),
+            "note": str(booking['note']) if booking['note'] is not None else "",
+            "valid": int(booking['valid'])
         }
 
-        conn.close()
         return jsonify(booking_info), 200
 
     except Exception as e:
         print(e)
         return jsonify({"error": "Something went wrong"}), 500
 
-
 @bookings_bp.route('/get/bookings/<flight_number>', methods=['GET'])
 @handle_db_locks(max_retries=5)
 def get_bookings_by_flight(flight_number):
     try:
         db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        bookings = db.execute(
-            "SELECT * FROM bookings WHERE flight_number = ? ORDER BY id",
+        cursor.execute(
+            "SELECT * FROM bookings WHERE flight_number = %s ORDER BY id",
             (flight_number,)
-        ).fetchall()
+        )
+        bookings = cursor.fetchall()
 
         if not bookings:
             return jsonify([]), 200
@@ -61,16 +59,16 @@ def get_bookings_by_flight(flight_number):
         response = []
         for booking in bookings:
             response.append({
-                "id": str(booking[0]),
-                "flight_number": str(booking[1]),
-                "created_at": int(booking[2]),
-                "user_id": str(booking[3]),
-                "seat": str(booking[4]),
-                "serve_class": str(booking[5]),
-                "pax_service": str(booking[6]) if booking[6] is not None else "",
-                "boarding_pass": str(booking[7]),
-                "note": str(booking[8]) if booking[8] is not None else "",
-                "valid": int(booking[9])
+                "id": str(booking['id']),
+                "flight_number": str(booking['flight_number']),
+                "created_at": int(booking['created_at']),
+                "user_id": str(booking['user_id']),
+                "seat": str(booking['seat']),
+                "serve_class": str(booking['serve_class']),
+                "pax_service": str(booking['pax_service']) if booking['pax_service'] is not None else "",
+                "boarding_pass": str(booking['boarding_pass']),
+                "note": str(booking['note']) if booking['note'] is not None else "",
+                "valid": int(booking['valid'])
             })
 
         return jsonify(response), 200
@@ -78,7 +76,6 @@ def get_bookings_by_flight(flight_number):
     except Exception as e:
         print(e)
         return jsonify({"error": "Something went wrong"}), 500
-
 
 @bookings_bp.route('/post/booking/', methods=['POST'])
 @handle_db_locks(max_retries=5)
@@ -106,20 +103,22 @@ def create_booking():
         virtual_id = data.get('virtual_id', '')
 
         db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        existing_booking = db.execute(
-            'SELECT id FROM bookings WHERE flight_number = ? AND seat = ? AND valid = 1',
-            (flight_number, seat)
-        ).fetchone()
+        cursor.execute(
+            'SELECT id FROM bookings WHERE flight_number = %s AND seat = %s AND valid = %s',
+            (flight_number, seat, valid)
+        )
+        existing_booking = cursor.fetchone()
 
         if existing_booking:
             return jsonify({'error': 'Seat already taken'}), 400
 
-        db.execute('''
+        cursor.execute('''
                    INSERT INTO bookings
                    (id, flight_number, created_at, user_id, seat, serve_class,
                     pax_service, boarding_pass, note, valid, passenger_name)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                    ''', (booking_id, flight_number, created_at, user_id, seat, serve_class,
                          pax_service, boarding_pass, note, valid, passenger_name))
 
@@ -133,25 +132,23 @@ def create_booking():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @bookings_bp.route('/delete/booking/<booking_id>', methods=['DELETE'])
 @login_required
 @handle_db_locks(max_retries=5)
 def delete_booking(booking_id):
     try:
         user_id = session['user_id']
-        conn = sqlite3.connect('airline.db')
-        c = conn.cursor()
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-        c.execute("SELECT * FROM bookings WHERE id = ? AND user_id = ?", (booking_id, user_id))
-        booking = c.fetchone()
+        cursor.execute("SELECT * FROM bookings WHERE id = %s AND user_id = %s", (booking_id, user_id))
+        booking = cursor.fetchone()
 
         if not booking:
             return jsonify({"error": "Booking not found"}), 404
 
-        c.execute("DELETE FROM bookings WHERE id = ?", (booking_id,))
-        conn.commit()
-        conn.close()
+        cursor.execute("DELETE FROM bookings WHERE id = %s", (booking_id,))
+        db.commit()
 
         return jsonify({"message": f"Booking {booking_id} deleted successfully"}), 200
 
