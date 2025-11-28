@@ -1,4 +1,3 @@
-
 let currentBooking = null;
 let currentUser = null;
 
@@ -18,7 +17,7 @@ async function loadBookingInfo() {
         currentBooking = await response.json();
         displayBookingInfo(currentBooking);
 
-        const servicesTotal = currentBooking.pax_services.reduce((total, service) => total + (service.price || 0), 0);
+        const servicesTotal = currentBooking.pax_services.reduce((total, service) => total + (parseFloat(service.price) || 0), 0);
         document.getElementById('paymentAmount').value = servicesTotal.toFixed(2);
         document.getElementById('paymentDescription').value = `Payment for booking ${bookingId} - Services`;
 
@@ -33,7 +32,7 @@ function displayBookingInfo(booking) {
     document.getElementById('infoPassenger').textContent = booking.passenger_name || booking.user_nickname;
     document.getElementById('infoSeat').textContent = `${booking.seat} (${booking.serve_class})`;
 
-    const servicesTotal = booking.pax_services.reduce((total, service) => total + (service.price || 0), 0);
+    const servicesTotal = booking.pax_services.reduce((total, service) => total + (parseFloat(service.price) || 0), 0);
     document.getElementById('infoServicesTotal').textContent = `$${servicesTotal.toFixed(2)}`;
 }
 
@@ -76,7 +75,7 @@ async function processBookingPayment() {
     const amount = parseFloat(document.getElementById('paymentAmount').value);
     const description = document.getElementById('paymentDescription').value;
 
-    if (!amount || amount <= 0) {
+    if (isNaN(amount) || amount <= 0) {
         alert('Please enter valid amount');
         return;
     }
@@ -125,7 +124,7 @@ async function processUserPayment() {
     const amount = parseFloat(document.getElementById('userAmount').value);
     const description = document.getElementById('userDescription').value;
 
-    if (!amount) {
+    if (isNaN(amount)) {
         alert('Please enter valid amount');
         return;
     }
@@ -137,7 +136,7 @@ async function processUserPayment() {
 
     try {
         const updateData = {
-            miles: (currentUser.miles || 0) + amount,
+            miles: (parseInt(currentUser.miles) || 0) + amount,
             transaction_description: description
         };
 
@@ -184,7 +183,7 @@ async function processMassPayment() {
         return;
     }
 
-    if (!amount || amount === 0) {
+    if (isNaN(amount) || amount === 0) {
         alert('Please enter valid amount');
         return;
     }
@@ -341,11 +340,15 @@ function displayTransactions(transactions) {
         return;
     }
 
-    container.innerHTML = transactions.map(transaction => `
+    container.innerHTML = transactions.map(transaction => {
+        // Преобразуем amount в число
+        const amount = parseFloat(transaction.amount);
+
+        return `
         <div class="transaction-item">
             <div class="transaction-header">
-                <div class="transaction-amount ${transaction.amount >= 0 ? 'amount-positive' : 'amount-negative'}">
-                    ${transaction.amount >= 0 ? '+' : ''}$${transaction.amount.toFixed(2)}
+                <div class="transaction-amount ${amount >= 0 ? 'amount-positive' : 'amount-negative'}">
+                    ${amount >= 0 ? '+' : ''}$${amount.toFixed(2)}
                 </div>
                 <div class="transaction-date">${transaction.created_at_formatted}</div>
             </div>
@@ -368,7 +371,8 @@ function displayTransactions(transactions) {
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function resetForms() {

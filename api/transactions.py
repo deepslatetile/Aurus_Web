@@ -122,11 +122,13 @@ def get_user_transactions(user_id):
 
         result_list = []
         for transaction in transactions:
+            amount = int(transaction['amount'])
+
             result_list.append({
                 'id': transaction['id'],
                 'user_id': transaction['user_id'],
                 'booking_id': transaction['booking_id'],
-                'amount': transaction['amount'],
+                'amount': amount,
                 'description': transaction['description'],
                 'type': transaction['type'],
                 'admin_user_id': transaction['admin_user_id'],
