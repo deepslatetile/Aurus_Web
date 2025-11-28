@@ -37,14 +37,13 @@ def get_meals_by_class(serve_class):
 
         response = []
         for meal in meals:
-            # Просто возвращаем image как есть - это всегда URL
             response.append({
                 "id": meal['id'],
                 "serve_class": meal['serve_class'],
                 "serve_time": meal['serve_time'],
                 "name": meal['name'],
                 "description": meal['description'] if meal['description'] is not None else "",
-                "image": meal['image']  # Это всегда URL
+                "image": meal['image']
             })
 
         return jsonify(response), 200
@@ -78,7 +77,7 @@ def post_meal():
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         description = data.get('description', '')
-        image = data.get('image', None)  # Это всегда URL
+        image = data.get('image', None)
 
         db = get_db()
         cursor = db.cursor(dictionary=True)
@@ -91,7 +90,7 @@ def post_meal():
                            data['serve_time'],
                            data['name'],
                            description,
-                           image  # Сохраняем URL как строку
+                           image
                        ))
 
         meal_id = cursor.lastrowid
@@ -139,31 +138,60 @@ def delete_meal(meal_id):
 @handle_db_locks(max_retries=5)
 def get_all_meals():
     try:
-        db = get_db()
-        cursor = db.cursor(dictionary=True)
+        print("🔄 Starting get_all_meals...")
 
+        db = get_db()
+        print("✅ Database connection established")
+
+        cursor = db.cursor(dictionary=True)
+        print("✅ Cursor created")
+
+        print("🔄 Executing SQL query...")
         cursor.execute("SELECT * FROM meals ORDER BY serve_class, serve_time, id")
+        print("✅ SQL query executed")
+
         meals = cursor.fetchall()
+        print(f"✅ Found {len(meals)} meals in database")
 
         if not meals:
+            print("ℹ️ No meals found in database")
             return jsonify([]), 200
 
         response = []
         for meal in meals:
-            response.append({
+            print(f"🔄 Processing meal ID: {meal['id']}, name: {meal['name']}")
+
+            # Проверяем типы данных
+            print(f"  - serve_class: {type(meal['serve_class'])} = {meal['serve_class']}")
+            print(f"  - serve_time: {type(meal['serve_time'])} = {meal['serve_time']}")
+            print(f"  - name: {type(meal['name'])} = {meal['name']}")
+            print(f"  - description: {type(meal['description'])} = {meal['description']}")
+            print(f"  - image: {type(meal['image'])} = {meal['image']}")
+
+            meal_data = {
                 "id": meal['id'],
                 "serve_class": meal['serve_class'],
                 "serve_time": meal['serve_time'],
                 "name": meal['name'],
                 "description": meal['description'] if meal['description'] is not None else "",
-                "image": meal['image']  # Это всегда URL
-            })
+                "image": meal['image']
+            }
+            response.append(meal_data)
+            print(f"✅ Meal {meal['id']} processed")
+
+        print(f"✅ Successfully formatted {len(response)} meals")
+        print(f"🔄 Sending JSON response...")
 
         return jsonify(response), 200
 
     except Exception as e:
-        print(f"Error getting all meals: {e}")
-        return jsonify({"error": "Something went wrong"}), 500
+        print(f"❌ Error in get_all_meals: {e}")
+        import traceback
+        print(f"❌ Full traceback: {traceback.format_exc()}")
+        return jsonify({
+            "error": "Something went wrong",
+            "details": str(e)
+        }), 500
 
 
 @meals_bp.route('/put/meal/<meal_id>', methods=['PUT'])
@@ -195,7 +223,7 @@ def update_meal(meal_id):
         for field in updatable_fields:
             if field in data:
                 update_fields.append(f"{field} = %s")
-                update_values.append(data[field])  # Сохраняем как есть (URL)
+                update_values.append(data[field])
 
         if not update_fields:
             return jsonify({"error": "No fields to update"}), 400
