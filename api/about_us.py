@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, session
 from database import get_db
 import time
+import base64
 
 about_us_bp = Blueprint('about_us', __name__)
 
@@ -39,10 +40,17 @@ def get_about_us():
         cursor.execute(query, params)
         items = cursor.fetchall()
 
-        # Конвертируем image из BLOB в base64 если нужно
+        # Конвертируем BLOB в base64 строку если нужно
         for item in items:
             if item.get('image'):
-                item['image'] = item['image'].decode('utf-8') if isinstance(item['image'], bytes) else item['image']
+                try:
+                    if isinstance(item['image'], bytes):
+                        # Конвертируем BLOB в base64
+                        item['image'] = base64.b64encode(item['image']).decode('utf-8')
+                except:
+                    item['image'] = None
+            else:
+                item['image'] = None
 
         return jsonify(items)
 
@@ -63,7 +71,13 @@ def get_about_us_item(item_id):
             return jsonify({'error': 'Item not found'}), 404
 
         if item.get('image'):
-            item['image'] = item['image'].decode('utf-8') if isinstance(item['image'], bytes) else item['image']
+            try:
+                if isinstance(item['image'], bytes):
+                    item['image'] = base64.b64encode(item['image']).decode('utf-8')
+            except:
+                item['image'] = None
+        else:
+            item['image'] = None
 
         return jsonify(item)
 
@@ -98,7 +112,16 @@ def create_about_us_item():
         if not user or user['user_group'] not in ['HQ', 'STF']:
             return jsonify({'error': 'Insufficient permissions'}), 403
 
-        current_time = int(time.time())
+        # Обработка изображения (если передано в base64)
+        image_data = None
+        if data.get('image') and isinstance(data['image'], str) and data['image'].startswith('data:image'):
+            # Убираем префикс data:image/*;base64,
+            if 'base64,' in data['image']:
+                base64_str = data['image'].split('base64,')[1]
+                image_data = base64.b64decode(base64_str)
+        elif data.get('image') and isinstance(data['image'], str):
+            # Просто URL, сохраняем как строку
+            image_data = data['image']
 
         cursor.execute('''
                        INSERT INTO about_us (name, description, image, about_group, subgroup, link,
@@ -109,7 +132,7 @@ def create_about_us_item():
                        ''', (
                            data['name'],
                            data.get('description', ''),
-                           data.get('image', ''),
+                           image_data,
                            data['about_group'],
                            data.get('subgroup', ''),
                            data.get('link', ''),
@@ -158,6 +181,16 @@ def update_about_us_item(item_id):
         if not cursor.fetchone():
             return jsonify({'error': 'Item not found'}), 404
 
+        # Обработка изображения
+        image_data = None
+        if 'image' in data:
+            if data['image'] and isinstance(data['image'], str) and data['image'].startswith('data:image'):
+                if 'base64,' in data['image']:
+                    base64_str = data['image'].split('base64,')[1]
+                    image_data = base64.b64decode(base64_str)
+            elif data['image'] and isinstance(data['image'], str):
+                image_data = data['image']
+
         update_fields = []
         params = []
 
@@ -181,8 +214,12 @@ def update_about_us_item(item_id):
 
         for json_field, db_field in field_mapping.items():
             if json_field in data:
-                update_fields.append(f"{db_field} = %s")
-                params.append(data[json_field])
+                if json_field == 'image' and image_data is not None:
+                    update_fields.append(f"{db_field} = %s")
+                    params.append(image_data)
+                elif json_field != 'image':
+                    update_fields.append(f"{db_field} = %s")
+                    params.append(data[json_field])
 
         if not update_fields:
             return jsonify({'error': 'No fields to update'}), 400
@@ -240,6 +277,54 @@ def get_about_us_groups():
         cursor.execute("SELECT DISTINCT about_group FROM about_us WHERE is_active = TRUE ORDER BY about_group")
         groups = [row['about_group'] for row in cursor.fetchall()]
         return jsonify(groups)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@about_us_bp.route('/get/about_us/types', methods=['GET'])
+def get_about_us_types():
+    """Получить типы для флота"""
+    try:
+        group_filter = request.args.get('group')
+
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        query = "SELECT DISTINCT fleet_type FROM about_us WHERE fleet_type IS NOT NULL AND fleet_type != ''"
+
+        if group_filter:
+            query += " AND about_group = %s"
+            cursor.execute(query, (group_filter,))
+        else:
+            cursor.execute(query)
+
+        types = [row['fleet_type'] for row in cursor.fetchall()]
+        return jsonify(types)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@about_us_bp.route('/get/about_us/departments', methods=['GET'])
+def get_about_us_departments():
+    """Получить отделы для команды"""
+    try:
+        group_filter = request.args.get('group')
+
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        query = "SELECT DISTINCT subgroup FROM about_us WHERE subgroup IS NOT NULL AND subgroup != ''"
+
+        if group_filter:
+            query += " AND about_group = %s"
+            cursor.execute(query, (group_filter,))
+        else:
+            cursor.execute(query)
+
+        departments = [row['subgroup'] for row in cursor.fetchall()]
+        return jsonify(departments)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
