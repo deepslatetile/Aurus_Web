@@ -86,7 +86,7 @@ def create_booking():
         flight_number = data.get('flight_number')
         seat = data.get('seat')
         serve_class = data.get('serve_class')
-        user_id = data.get('user_id')
+        user_id = data.get('user_id', '-1')
         passenger_name = data.get('passenger_name')
 
         if not all([flight_number, seat, serve_class, passenger_name]):
