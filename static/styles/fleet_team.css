@@ -235,6 +235,10 @@
     color: #5facf6;
 }
 
+option {
+    background-color: #0d2064;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
     .fleet-page, .team-page {

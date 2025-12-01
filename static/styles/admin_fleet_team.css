@@ -338,7 +338,6 @@
     transform: none;
 }
 
-/* Alert */
 .alert {
     padding: 1rem;
     border-radius: 6px;
@@ -354,6 +353,10 @@
 .alert-error {
     background: #ff4444;
     color: white;
+}
+
+option {
+    background-color: #0d2064;
 }
 
 /* Mobile */

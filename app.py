@@ -365,7 +365,7 @@ def admin_fleet():
     )
     user = cursor.fetchone()
 
-    if not user or user['user_group'] not in ['HQ', 'STF']:
+    if not user or user['user_group'] not in ['HQ']:
         return redirect('/')
 
     return render_template('admin_fleet.html')
@@ -384,7 +384,7 @@ def admin_team():
     )
     user = cursor.fetchone()
 
-    if not user or user['user_group'] not in ['HQ', 'STF']:
+    if not user or user['user_group'] not in ['HQ']:
         return redirect('/')
 
     return render_template('admin_team.html')
