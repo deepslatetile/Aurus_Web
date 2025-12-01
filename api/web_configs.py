@@ -238,3 +238,4 @@ def update_page_content(page_name):
     except Exception as e:
         print(e)
         return jsonify({"error": "Something went wrong"}), 500
+

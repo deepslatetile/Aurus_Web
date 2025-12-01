@@ -8,7 +8,6 @@ from services.db_utils import handle_db_locks
 flight_configs_bp = Blueprint('flight_configs', __name__)
 
 @flight_configs_bp.route('/get/flight_configs/<config_type>', methods=['GET'])
-@login_required
 @handle_db_locks(max_retries=5)
 def get_flight_configs_by_type(config_type):
     try:
@@ -213,12 +212,8 @@ def delete_flight_config(config_id):
         return jsonify({"error": "Something went wrong"}), 500
 
 @flight_configs_bp.route('/get/flight_configs', methods=['GET'])
-@login_required
 @handle_db_locks(max_retries=5)
 def get_all_flight_configs():
-    if session.get('user_group') not in ['HQ', 'STF']:
-        return jsonify({"error": "Admin access required"}), 403
-
     try:
         db = get_db()
         cursor = db.cursor(dictionary=True)
