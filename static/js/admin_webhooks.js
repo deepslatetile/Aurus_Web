@@ -13,9 +13,10 @@ const TEMPLATES = {
             { name: "Flight Number", value: "AU101", inline: true },
             { name: "Route", value: "KJA → DME", inline: true },
             { name: "Aircraft", value: "B737-800", inline: true },
-            { name: "Departure", value: "Tomorrow, 14:30 UTC", inline: false },
+            { name: "Starts at", value: "<t:1700000000>\n<t:1700000000:R>", inline: false },
             { name: "Status", value: "Scheduled", inline: true }
-        ]
+        ],
+        pingRole: "@pilots"
     },
     booking_confirmed: {
         title: "🎫 Booking Confirmed",
@@ -55,7 +56,8 @@ const TEMPLATES = {
             { name: "Component", value: "Database", inline: true },
             { name: "Error Code", value: "ERR_DB_001", inline: true },
             { name: "Description", value: "Connection pool exhausted. Immediate action required.", inline: false }
-        ]
+        ],
+        pingRole: "@admins"
     }
 };
 
@@ -99,18 +101,18 @@ function parseFlightDataFromURL() {
 
 // Функция для применения шаблона из данных рейса
 function applyFlightDataTemplate(flightData) {
-    // Форматируем дату
-    let formattedDate = 'N/A';
-    if (flightData.datetime) {
+    // Форматируем дату в Discord timestamp формат
+    let discordTimestamp = '';
+    let discordRelativeTimestamp = '';
+
+    if (flightData.unix_timestamp) {
+        discordTimestamp = `<t:${flightData.unix_timestamp}>`;
+        discordRelativeTimestamp = `<t:${flightData.unix_timestamp}:R>`;
+    } else if (flightData.datetime) {
         const departureDate = new Date(flightData.datetime);
-        formattedDate = departureDate.toLocaleString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        const unixTimestamp = Math.floor(departureDate.getTime() / 1000);
+        discordTimestamp = `<t:${unixTimestamp}>`;
+        discordRelativeTimestamp = `<t:${unixTimestamp}:R>`;
     }
 
     // Форматируем длительность полета
@@ -123,11 +125,13 @@ function applyFlightDataTemplate(flightData) {
     document.getElementById('colorValue').textContent = '#5865F2';
     document.getElementById('authorName').value = 'Flight Scheduling System';
     document.getElementById('footerText').value = `Flight System • ${new Date().toLocaleDateString()}`;
+    // Автоматически добавляем пинг для пилотов
+    document.getElementById('pingRole').value = '@pilots';
 
     // Очищаем существующие поля
     embedFields = [];
 
-    // Создаем поля с данными рейса
+    // Создаем поля с данными рейса (БЕЗ Seatmap и Boarding Pass Style)
     const fields = [];
 
     if (flightData.flight_number) {
@@ -154,10 +158,18 @@ function applyFlightDataTemplate(flightData) {
         });
     }
 
-    if (flightData.datetime) {
+    // Добавляем время с Discord timestamp форматированием
+    if (discordTimestamp && discordRelativeTimestamp) {
         fields.push({
-            name: "Departure Time",
-            value: formattedDate,
+            name: "Starts at",
+            value: `${discordTimestamp}\n${discordRelativeTimestamp}`,
+            inline: false
+        });
+    } else if (flightData.datetime) {
+        const departureDate = new Date(flightData.datetime);
+        fields.push({
+            name: "Starts at",
+            value: departureDate.toLocaleString(),
             inline: false
         });
     }
@@ -178,13 +190,7 @@ function applyFlightDataTemplate(flightData) {
         });
     }
 
-    if (flightData.seatmap && flightData.seatmap !== 'custom') {
-        fields.push({
-            name: "Seatmap",
-            value: flightData.seatmap,
-            inline: true
-        });
-    }
+    // НЕ добавляем Seatmap - убираем это поле
 
     if (flightData.meal && flightData.meal !== 'custom') {
         fields.push({
@@ -202,13 +208,7 @@ function applyFlightDataTemplate(flightData) {
         });
     }
 
-    if (flightData.boarding_pass) {
-        fields.push({
-            name: "Boarding Pass Style",
-            value: flightData.boarding_pass,
-            inline: true
-        });
-    }
+    // НЕ добавляем Boarding Pass Style - убираем это поле
 
     embedFields = fields;
     renderFields();
@@ -227,6 +227,7 @@ function loadSavedConfiguration() {
             const config = JSON.parse(savedConfig);
             document.getElementById('webhookUrl').value = config.webhookUrl || '';
             document.getElementById('webhookName').value = config.webhookName || '';
+            document.getElementById('pingRole').value = config.pingRole || '';
         }
 
         const savedMessage = localStorage.getItem('discordMessageConfig');
@@ -256,7 +257,8 @@ function loadSavedConfiguration() {
 function saveConfiguration() {
     const config = {
         webhookUrl: document.getElementById('webhookUrl').value,
-        webhookName: document.getElementById('webhookName').value
+        webhookName: document.getElementById('webhookName').value,
+        pingRole: document.getElementById('pingRole').value
     };
     localStorage.setItem('discordWebhookConfig', JSON.stringify(config));
 }
@@ -319,7 +321,7 @@ function setupEventListeners() {
 
     // Save on input changes
     const saveInputs = [
-        'webhookUrl', 'webhookName', 'messageTitle', 'messageDescription',
+        'webhookUrl', 'webhookName', 'pingRole', 'messageTitle', 'messageDescription',
         'authorName', 'authorIcon', 'footerText', 'footerIcon',
         'thumbnailUrl', 'imageUrl'
     ];
@@ -331,7 +333,11 @@ function setupEventListeners() {
                 if (id === 'messageDescription') {
                     updateCharCounter('descCharCount', this.value.length, 4096);
                 }
-                saveMessageConfig();
+                if (id === 'pingRole' || id === 'webhookUrl' || id === 'webhookName') {
+                    saveConfiguration();
+                } else {
+                    saveMessageConfig();
+                }
             });
         }
     });
@@ -391,12 +397,14 @@ function applyTemplate(templateName) {
     document.getElementById('colorValue').textContent = template.color;
     document.getElementById('authorName').value = template.authorName || '';
     document.getElementById('footerText').value = template.footerText || '';
+    document.getElementById('pingRole').value = template.pingRole || '';
 
     embedFields = template.fields || [];
     renderFields();
 
     updateCharCounter('descCharCount', template.description.length, 4096);
     saveMessageConfig();
+    saveConfiguration();
 
     showAlert(`"${templateName.replace('_', ' ')}" template applied!`, 'success');
 }
@@ -563,7 +571,10 @@ async function testWebhookConnection() {
 
 function previewMessage() {
     const embedData = buildEmbedData();
+    const pingRole = document.getElementById('pingRole').value.trim();
     const previewContainer = document.getElementById('embedPreview');
+    const pingPreview = document.getElementById('pingPreview');
+    const pingPreviewText = document.getElementById('pingPreviewText');
     const previewCard = document.getElementById('previewCard');
 
     if (!embedData.title || !embedData.description) {
@@ -625,12 +636,22 @@ function previewMessage() {
 
     previewHtml += '</div>';
     previewContainer.innerHTML = previewHtml;
+
+    // Показываем пинг если есть
+    if (pingRole) {
+        pingPreviewText.textContent = pingRole;
+        pingPreview.style.display = 'block';
+    } else {
+        pingPreview.style.display = 'none';
+    }
+
     previewCard.style.display = 'block';
     previewCard.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function sendMessage() {
     const webhookUrl = document.getElementById('webhookUrl').value;
+    const pingRole = document.getElementById('pingRole').value.trim();
 
     if (!webhookUrl) {
         showAlert('Please enter a webhook URL first!', 'error');
@@ -661,6 +682,11 @@ async function sendMessage() {
             payload.username = webhookName;
         }
 
+        // Add role ping if specified
+        if (pingRole) {
+            payload.content = pingRole;
+        }
+
         const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
@@ -673,7 +699,10 @@ async function sendMessage() {
             showAlert('✅ Message sent successfully to Discord!', 'success');
 
             // Log the action
-            await logWebhookAction('sent', embedData);
+            await logWebhookAction('sent', {
+                embed: embedData,
+                pingRole: pingRole || null
+            });
 
         } else if (response.status === 404) {
             throw new Error('Webhook not found (deleted or invalid URL)');
@@ -687,7 +716,10 @@ async function sendMessage() {
         showAlert(`❌ Failed to send message: ${error.message}`, 'error');
 
         // Log the error
-        await logWebhookAction('error', { error: error.message });
+        await logWebhookAction('error', {
+            error: error.message,
+            pingRole: pingRole || null
+        });
 
     } finally {
         sendBtn.disabled = false;

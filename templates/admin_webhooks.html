@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="/static/styles/admin_webhooks.css">
+<link rel="stylesheet" href="/static/styles/admin_webhooks.css">
 {% endblock %}
 
 {% block content %}
@@ -39,10 +39,28 @@
                     Discord.</small>
             </div>
 
-            <div class="form-group">
-                <label for="webhookName">Webhook Display Name</label>
-                <input type="text" id="webhookName" placeholder="Flight System Notifications"
-                       maxlength="80">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="webhookName">Webhook Display Name</label>
+                    <input type="text" id="webhookName" placeholder="Flight System Notifications"
+                           maxlength="80">
+                </div>
+                <div class="form-group">
+                    <label for="pingRole">Role to Ping (Optional)</label>
+                    <div class="input-with-help">
+                        <input type="text" id="pingRole" placeholder="@pilots or &lt;@&amp;1234567890&gt;"
+                               maxlength="100">
+                        <div class="help-tooltip">
+                            <i class="fas fa-question-circle"></i>
+                            <span class="tooltip-text">
+                                Enter role mention like @pilots<br>
+                                Or use role ID format: &lt;@&amp;ROLE_ID&gt;<br>
+                                Leave empty for no ping
+                            </span>
+                        </div>
+                    </div>
+                    <small class="form-hint">Use @mention or role ID format</small>
+                </div>
             </div>
 
             <div class="form-actions">
@@ -156,6 +174,9 @@
             </div>
             <div id="embedPreview">
                 <!-- Preview will be rendered here -->
+            </div>
+            <div class="ping-preview" id="pingPreview" style="display: none;">
+                <strong>Role Ping:</strong> <span id="pingPreviewText"></span>
             </div>
             <div class="preview-note">
                 <i class="fas fa-info-circle"></i>

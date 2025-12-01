@@ -1,4 +1,3 @@
-/* admin_webhooks.css */
 .admin-container {
     padding: 20px;
     max-width: 1200px;
@@ -19,12 +18,11 @@
 }
 
 .admin-breadcrumb {
-    color: #8fa3d8;
-    font-size: 0.9rem;
+    color: #a0b3e5;
 }
 
 .admin-breadcrumb a {
-    color: #5865f2;
+    color: #5facf6;
     text-decoration: none;
 }
 
@@ -65,7 +63,6 @@
     font-size: 1.4rem;
 }
 
-/* Form Styles */
 .form-group {
     margin-bottom: 20px;
 }
@@ -124,10 +121,9 @@ select:focus {
 textarea {
     resize: vertical;
     min-height: 80px;
-    font-family: inherit;
+    /*font-family: inherit;*/
 }
 
-/* Input with help tooltip */
 .input-with-help {
     position: relative;
     display: flex;
@@ -190,7 +186,6 @@ textarea {
     display: block;
 }
 
-/* Color picker */
 .color-picker-container {
     display: flex;
     align-items: center;
@@ -214,16 +209,14 @@ textarea {
     user-select: all;
 }
 
-/* Character counters */
 .char-counter {
     text-align: right;
     font-size: 0.85rem;
     color: #8fa3d8;
     margin-top: 5px;
-    font-family: monospace;
+    /*font-family: monospace;*/
 }
 
-/* Section headers */
 .section-header {
     display: flex;
     justify-content: space-between;
@@ -260,7 +253,6 @@ textarea {
     background: rgba(88, 101, 242, 0.1);
 }
 
-/* Buttons */
 .form-actions {
     display: flex;
     gap: 12px;
@@ -306,7 +298,6 @@ textarea {
     background: #686d73;
 }
 
-/* Fields container */
 #embedFieldsContainer {
     display: flex;
     flex-direction: column;
@@ -410,7 +401,6 @@ textarea {
     color: #b5bac1;
 }
 
-/* Preview styling */
 #previewCard {
     margin-top: 20px;
 }
@@ -425,7 +415,7 @@ textarea {
 }
 
 .preview-embed {
-    font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    /*font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;*/
 }
 
 .preview-author {
@@ -566,7 +556,6 @@ textarea {
     color: #7289da;
 }
 
-/* Templates grid */
 .templates-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -625,7 +614,6 @@ textarea {
     padding: 8px;
 }
 
-/* Modal styles */
 .modal {
     display: none;
     position: fixed;
@@ -706,7 +694,6 @@ textarea {
     padding: 20px;
 }
 
-/* Checkbox styling */
 .checkbox-group {
     margin-top: 20px;
 }
@@ -756,7 +743,6 @@ textarea {
     transform: rotate(45deg);
 }
 
-/* Loading animation */
 .loading {
     display: inline-block;
     width: 20px;
@@ -772,7 +758,6 @@ textarea {
     to { transform: rotate(360deg); }
 }
 
-/* Alerts */
 #adminAlerts {
     position: fixed;
     top: 20px;
@@ -821,7 +806,35 @@ textarea {
     font-size: 1.2rem;
 }
 
-/* Responsive design */
+.ping-preview {
+    background: rgba(88, 101, 242, 0.1);
+    border: 1px solid rgba(88, 101, 242, 0.3);
+    border-radius: 6px;
+    padding: 10px 15px;
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #8fa3d8;
+    font-size: 0.95rem;
+}
+
+.ping-preview strong {
+    color: #5865f2;
+    font-weight: 600;
+}
+
+#pingPreviewText {
+    color: #ffffff;
+    font-weight: 500;
+    background: rgba(88, 101, 242, 0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    /*font-family: 'Consolas', 'Monaco', monospace;*/
+    font-size: 0.9rem;
+}
+
+/* Mobile */
 @media (max-width: 768px) {
     .admin-container {
         padding: 10px;
@@ -907,7 +920,6 @@ textarea {
     }
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -926,7 +938,6 @@ textarea {
     background: #4f545c;
 }
 
-/* Utility classes */
 .hidden {
     display: none !important;
 }
