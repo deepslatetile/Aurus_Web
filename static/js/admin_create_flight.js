@@ -1,4 +1,3 @@
-
 let seatmaps = [];
 let boardingStyles = [];
 let availableServices = [];
@@ -170,38 +169,6 @@ function getComboValue(selectId, customInputId) {
     return select.value;
 }
 
-function setupComboInputs() {
-    document.getElementById('status').addEventListener('change', function () {
-        const customInput = document.getElementById('status_custom');
-        if (this.value === 'custom') {
-            customInput.style.display = 'block';
-            customInput.required = true;
-        } else {
-            customInput.style.display = 'none';
-            customInput.required = false;
-        }
-    });
-    document.getElementById('meal').addEventListener('change', function () {
-        const customInput = document.getElementById('meal_custom');
-        if (this.value === 'custom') {
-            customInput.style.display = 'block';
-        } else {
-            customInput.style.display = 'none';
-        }
-    });
-
-    document.getElementById('seatmap').addEventListener('change', function () {
-        const customInput = document.getElementById('seatmap_custom');
-        if (this.value === 'custom') {
-            customInput.style.display = 'block';
-            customInput.required = true;
-        } else {
-            customInput.style.display = 'none';
-            customInput.required = false;
-        }
-    });
-}
-
 document.getElementById('previewBtn').addEventListener('click', function () {
     const formData = new FormData(document.getElementById('createFlightForm'));
     const previewSection = document.getElementById('previewSection');
@@ -216,6 +183,12 @@ document.getElementById('previewBtn').addEventListener('click', function () {
         showAlert('Please fill in flight number and aircraft type first', 'error');
         return;
     }
+
+    const selectedServices = Array.from(document.querySelectorAll('input[name="services"]:checked'))
+        .map(checkbox => {
+            const price = checkbox.getAttribute('data-price');
+            return `${checkbox.value} ($${price})`;
+        });
 
     let previewHTML = `
         <div class="preview-item">
@@ -256,12 +229,6 @@ document.getElementById('previewBtn').addEventListener('click', function () {
         </div>
     `;
 
-    const selectedServices = Array.from(document.querySelectorAll('input[name="services"]:checked'))
-            .map(checkbox => {
-                const price = checkbox.getAttribute('data-price');
-                return `${checkbox.value} ($${price})`;
-            });
-
     if (selectedServices.length > 0) {
         previewHTML += `
             <div class="preview-item">
@@ -270,6 +237,18 @@ document.getElementById('previewBtn').addEventListener('click', function () {
             </div>
         `;
     }
+
+    // Добавляем кнопку вебхука
+    previewHTML += `
+        <div class="preview-item">
+            <span class="preview-label">Quick Actions:</span>
+            <span class="preview-value">
+                <button type="button" class="btn-small" onclick="createDiscordWebhook()" style="margin-top: 5px;">
+                    <i class="fab fa-discord"></i> Create Discord Notification
+                </button>
+            </span>
+        </div>
+    `;
 
     previewContent.innerHTML = previewHTML;
     previewSection.style.display = 'block';
@@ -311,7 +290,7 @@ document.getElementById('createFlightForm').addEventListener('submit', async fun
         aircraft: formData.get('aircraft'),
         meal: meal,
         pax_service: JSON.stringify(Array.from(document.querySelectorAll('input[name="services"]:checked'))
-                .map(checkbox => checkbox.value)),
+            .map(checkbox => checkbox.value)),
         boarding_pass_default: boardingPass
     };
 
@@ -396,6 +375,45 @@ function showAlert(message, type) {
     alert.scrollIntoView({behavior: 'smooth', block: 'nearest'});
 }
 
+// Новая функция для создания вебхука
+function createDiscordWebhook() {
+    const formData = new FormData(document.getElementById('createFlightForm'));
+
+    const flightData = {
+        flight_number: formData.get('flight_number'),
+        departure: formData.get('departure'),
+        arrival: formData.get('arrival'),
+        datetime: formData.get('datetime'),
+        enroute: formData.get('enroute'),
+        status: getComboValue('status', 'status_custom'),
+        seatmap: getComboValue('seatmap', 'seatmap_custom'),
+        aircraft: formData.get('aircraft'),
+        meal: getComboValue('meal', 'meal_custom'),
+        boarding_pass: getComboValue('boarding_pass_default', 'boarding_pass_custom'),
+        timestamp: Date.now()
+    };
+
+    // Получаем выбранные сервисы
+    const selectedServices = Array.from(document.querySelectorAll('input[name="services"]:checked'))
+        .map(checkbox => checkbox.value);
+
+    if (selectedServices.length > 0) {
+        flightData.services = selectedServices;
+    }
+
+    // Проверяем, заполнены ли обязательные поля
+    if (!flightData.flight_number || !flightData.departure || !flightData.arrival) {
+        showAlert('Please fill in flight number, departure, and arrival before creating a webhook', 'error');
+        return;
+    }
+
+    // Кодируем данные для URL
+    const encodedData = encodeURIComponent(JSON.stringify(flightData));
+
+    // Открываем страницу вебхуков с переданными данными
+    window.open(`/admin/webhooks?flight_data=${encodedData}`, '_blank');
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     console.log("Admin create flight page loaded, initializing...");
 
@@ -412,4 +430,17 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('meal').value = 'Standard Meal Service';
 
     console.log("Admin create flight page initialized successfully");
+
+    // Добавляем кнопку вебхука в форму
+    const formActions = document.querySelector('.form-actions');
+    const webhookBtn = document.createElement('button');
+    webhookBtn.type = 'button';
+    webhookBtn.id = 'webhookBtn';
+    webhookBtn.className = 'btn-secondary';
+    webhookBtn.innerHTML = '<i class="fab fa-discord"></i> Discord Webhook';
+    webhookBtn.style.marginLeft = '10px';
+    webhookBtn.addEventListener('click', createDiscordWebhook);
+
+    const previewBtn = document.getElementById('previewBtn');
+    previewBtn.parentNode.insertBefore(webhookBtn, previewBtn.nextSibling);
 });

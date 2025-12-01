@@ -315,10 +315,29 @@ def admin_users():
     )
     user = cursor.fetchone()
 
-    if not user or user['user_group'] not in ['HQ', 'STF']:
+    if not user or user['user_group'] not in ['HQ']:
         return redirect('/')
 
     return render_template('admin_users.html')
+
+@app.route('/admin/webhooks', methods=['GET'])
+def admin_webhooks():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
+        (session['user_id'],)
+    )
+    user = cursor.fetchone()
+
+    if not user or user['user_group'] not in ['HQ', 'STF']:
+        return redirect('/')
+
+    return render_template('admin_webhooks.html')
+
 
 def check_environment():
     # TODO

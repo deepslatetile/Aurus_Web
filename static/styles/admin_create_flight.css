@@ -324,6 +324,30 @@ option {
     background-color: #0d2064;
 }
 
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    background: #5865f2;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.2s;
+}
+
+.btn-small:hover {
+    background: #4752c4;
+}
+
+.preview-item .btn-small {
+    margin-top: 5px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
     .admin-container {
