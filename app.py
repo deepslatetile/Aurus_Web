@@ -23,6 +23,7 @@ from services.boarding_pass import boarding_bp
 from admin.admin_bookings import admin_bookings_bp
 from admin.admin_weather import admin_weather_bp
 from admin.admin_users import admin_users_bp
+from api.about_us import about_us_bp  # Новый импорт
 
 app = Flask(__name__)
 app = init_app(app)
@@ -49,6 +50,7 @@ app.register_blueprint(flight_configs_bp, url_prefix='/api')
 app.register_blueprint(admin_bookings_bp, url_prefix='/admin/api')
 app.register_blueprint(admin_weather_bp, url_prefix='/admin/api')
 app.register_blueprint(admin_users_bp, url_prefix='/admin/api')
+app.register_blueprint(about_us_bp, url_prefix='/api')  # Регистрируем новый blueprint
 
 @app.route('/static/fonts/<path:filename>')
 def serve_fonts(filename):
@@ -302,24 +304,6 @@ def admin_weather():
 
     return render_template('admin_weather.html')
 
-@app.route('/admin/users', methods=['GET'])
-def admin_users():
-    if 'user_id' not in session:
-        return redirect('/login')
-
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
-    cursor.execute(
-        'SELECT user_group FROM users WHERE id = %s',
-        (session['user_id'],)
-    )
-    user = cursor.fetchone()
-
-    if not user or user['user_group'] not in ['HQ']:
-        return redirect('/')
-
-    return render_template('admin_users.html')
-
 @app.route('/admin/webhooks', methods=['GET'])
 def admin_webhooks():
     if 'user_id' not in session:
@@ -338,6 +322,72 @@ def admin_webhooks():
 
     return render_template('admin_webhooks.html')
 
+@app.route('/admin/users', methods=['GET'])
+def admin_users():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
+        (session['user_id'],)
+    )
+    user = cursor.fetchone()
+
+    if not user or user['user_group'] not in ['HQ']:
+        return redirect('/')
+
+    return render_template('admin_users.html')
+
+# Новые маршруты для флота и команды
+@app.route('/fleet', methods=['GET'])
+def fleet():
+    """Страница с информацией о флоте"""
+    return render_template('fleet.html')
+
+@app.route('/team', methods=['GET'])
+def team():
+    """Страница с информацией о команде"""
+    return render_template('team.html')
+
+@app.route('/admin/fleet', methods=['GET'])
+def admin_fleet():
+    """Админ-панель для управления флотом"""
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
+        (session['user_id'],)
+    )
+    user = cursor.fetchone()
+
+    if not user or user['user_group'] not in ['HQ', 'STF']:
+        return redirect('/')
+
+    return render_template('admin_fleet.html')
+
+@app.route('/admin/team', methods=['GET'])
+def admin_team():
+    """Админ-панель для управления командой"""
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        'SELECT user_group FROM users WHERE id = %s',
+        (session['user_id'],)
+    )
+    user = cursor.fetchone()
+
+    if not user or user['user_group'] not in ['HQ', 'STF']:
+        return redirect('/')
+
+    return render_template('admin_team.html')
 
 def check_environment():
     # TODO

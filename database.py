@@ -152,7 +152,7 @@ def init_db():
         ''')
         print("✅ Meals table created")
 
-        # About us table
+        # About us table - изменяем для поддержки флота и команды
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS about_us
             (
@@ -162,7 +162,16 @@ def init_db():
                 image LONGBLOB,
                 about_group VARCHAR(255) NOT NULL,
                 subgroup VARCHAR(255) NOT NULL,
-                link TEXT
+                link TEXT,
+                role VARCHAR(255),
+                position VARCHAR(255),
+                years_experience INT,
+                fleet_type VARCHAR(255),
+                registration_number VARCHAR(255),
+                capacity INT,
+                first_flight YEAR,
+                display_order INT DEFAULT 0,
+                is_active BOOLEAN DEFAULT TRUE
             )
         ''')
         print("✅ About us table created")
@@ -257,7 +266,6 @@ def init_db():
         ''')
         print("✅ Weather Cache table created")
 
-        # Создаем индекс для weather_cache (без IF NOT EXISTS)
         try:
             cursor.execute('''
                 CREATE INDEX idx_weather_cache_expires 
@@ -265,7 +273,6 @@ def init_db():
             ''')
             print("✅ Weather cache index created")
         except Error as e:
-            # Если индекс уже существует, игнорируем ошибку
             if "Duplicate key name" not in str(e):
                 print(f"⚠️ Could not create index (might already exist): {e}")
 
