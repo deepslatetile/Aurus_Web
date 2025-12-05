@@ -87,8 +87,11 @@ function updateFilters() {
     const classes = [...new Set(allMeals.map(meal => meal.serve_class))];
     const times = [...new Set(allMeals.map(meal => meal.serve_time))];
 
+    const classHierarchy = ["First", "Business", "Economy"];
+    const orderedClasses = classHierarchy.filter(cls => classes.includes(cls));
+    
     classSelect.innerHTML = '<option value="all">All Classes</option>';
-    classes.forEach(className => {
+    orderedClasses.forEach(className => {
         classSelect.innerHTML += '<option value="' + className + '">' + className + '</option>';
     });
 
@@ -105,8 +108,15 @@ function filterMenu() {
 
     let filteredMeals = allMeals;
 
+    const classHierarchy = ["First", "Business", "Economy"];
+    
     if (selectedClass !== 'all') {
-        filteredMeals = filteredMeals.filter(meal => meal.serve_class === selectedClass);
+        const selectedIndex = classHierarchy.indexOf(selectedClass);
+        const allowedClasses = classHierarchy.slice(selectedIndex);
+        
+        filteredMeals = filteredMeals.filter(meal => 
+            allowedClasses.includes(meal.serve_class)
+        );
     }
 
     if (selectedTime !== 'all') {
