@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/fleet_team.css">
+{% endblock %}
+
+{% block content %}
+<div class="team-page">
+    <div class="page-header">
+        <h1><i class="fas fa-users"></i> Our Team</h1>
+        <p class="subtitle">Meet the dedicated professionals behind Aurus Airlines</p>
+    </div>
+
+    <div class="page-content">
+        <div class="filters-container">
+            <div class="filter-group">
+                <label for="departmentFilter">Filter by Department:</label>
+                <select id="departmentFilter" class="filter-select">
+                    <option value="all">All Departments</option>
+                    <option value="pilots">Flight Crew</option>
+                    <option value="cabin">Cabin Crew</option>
+                    <option value="operations">Operations</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="management">Management</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="sortFilter">Sort by:</label>
+                <select id="sortFilter" class="filter-select">
+                    <option value="name">Name</option>
+                    <option value="experience">Experience</option>
+                    <option value="position">Position</option>
+                </select>
+            </div>
+            <button id="resetFilters" class="btn-secondary">
+                <i class="fas fa-redo"></i> Reset Filters
+            </button>
+        </div>
+
+        <div id="teamContainer" class="team-grid">
+            <div class="loading-container">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading team information...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/team.js"></script>
+{% endblock %}

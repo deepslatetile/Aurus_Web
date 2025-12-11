@@ -1,0 +1,329 @@
+.admin-panel {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.admin-header {
+    margin-bottom: 2rem;
+}
+
+.admin-header h1 {
+    color: #fff;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.admin-breadcrumb {
+    color: #a0b3e5;
+}
+
+.admin-breadcrumb a {
+    color: #5facf6;
+    text-decoration: none;
+}
+
+.admin-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.payment-section {
+    background: #1a2b5f;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.payment-section h2 {
+    color: #5facf6;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    border-bottom: 1px solid #2d4ba8;
+    padding-bottom: 0.5rem;
+}
+
+.payment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    /*font-weight: bold;*/
+    color: #fff;
+}
+
+.form-group input {
+    padding: 12px 16px;
+    border: 1px solid #2d4ba8;
+    border-radius: 4px;
+    background: #0d2064;
+    color: white;
+    font-size: 1rem;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.load-btn,
+.process-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    /*font-weight: bold;*/
+    transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.load-btn {
+    background: #0f6fe5;
+    color: white;
+    margin-top: 0.5rem;
+}
+
+.load-btn:hover {
+    background: #5facf6;
+}
+
+.process-btn {
+    background: #00C851;
+    color: white;
+}
+
+.process-btn:hover {
+    background: #007e33;
+}
+
+.mass-btn {
+    background: #ff8800;
+}
+
+.mass-btn:hover {
+    background: #cc6a00;
+}
+
+.booking-info,
+.user-info {
+    background: #0d2064;
+    padding: 1rem;
+    border-radius: 4px;
+    border-left: 4px solid #0f6fe5;
+    margin-top: 1rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.label {
+    /*font-weight: bold;*/
+    color: #ccc;
+    white-space: nowrap;
+}
+
+.transactions-controls {
+    margin-bottom: 1.5rem;
+}
+
+.transactions-list {
+    margin-top: 1rem;
+}
+
+.transaction-item {
+    background: #0d2064;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border-radius: 4px;
+    border-left: 4px solid #0f6fe5;
+    transition: background-color 0.3s;
+}
+
+.transaction-item:hover {
+    background: #113c96;
+}
+
+.transaction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.transaction-amount {
+    /*font-weight: bold;*/
+    font-size: 1.1rem;
+}
+
+.amount-positive {
+    color: #00C851;
+}
+
+.amount-negative {
+    color: #ff4444;
+}
+
+.transaction-date {
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+.transaction-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.transaction-detail {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.detail-label {
+    /*font-weight: bold;*/
+    color: #ccc;
+    white-space: nowrap;
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: #ccc;
+    font-style: italic;
+}
+
+.error {
+    text-align: center;
+    padding: 2rem;
+    color: #ff4444;
+    background: #1a2b5f;
+    border-radius: 4px;
+    border-left: 4px solid #ff4444;
+}
+
+.mass-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.fa-spin {
+    animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .admin-panel {
+        padding: 0.5rem;
+    }
+
+    .payment-section {
+        padding: 1rem;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .transaction-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .transaction-details {
+        grid-template-columns: 1fr;
+    }
+
+    .transaction-detail {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .payment-section {
+        padding: 0.75rem;
+    }
+
+    .form-group input {
+        padding: 10px 12px;
+    }
+
+    .load-btn,
+    .process-btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+
+    .transaction-item {
+        padding: 0.75rem;
+    }
+
+    .transaction-amount {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 320px) {
+    .admin-panel {
+        padding: 0.25rem;
+    }
+
+    .payment-section {
+        padding: 0.5rem;
+    }
+
+    .payment-section h2 {
+        font-size: 1.1rem;
+    }
+
+    .form-group input {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+
+    .load-btn,
+    .process-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+}

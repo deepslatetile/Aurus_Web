@@ -1,0 +1,256 @@
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-header {
+    margin-bottom: 2rem;
+}
+
+.profile-header h1 {
+    font-size: 2.5rem;
+    color: #fff;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.profile-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.profile-card {
+    background: linear-gradient(135deg, #0d2064 0%, #113c96 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    border: 1px solid #1e4db3;
+}
+
+.profile-card h2 {
+    color: #5facf6;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    border-bottom: 1px solid #2d5cc4;
+    padding-bottom: 0.5rem;
+}
+
+.user-info {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.avatar-section {
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #0f6fe5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.info-section {
+    flex: 1;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #2d5cc4;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item label {
+    /*font-weight: 600;*/
+    color: #c2d0f5;
+}
+
+.info-item span {
+    color: #fff;
+    /*font-weight: 500;*/
+}
+
+.services-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.service-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid #2d5cc4;
+}
+
+.service-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.service-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.service-icon.discord {
+    background: #5865f2;
+}
+
+.service-icon.roblox {
+    background: #00a2ff;
+}
+
+.service-details h3 {
+    margin: 0 0 0.25rem 0;
+    color: #fff;
+}
+
+.service-details p {
+    margin: 0;
+    color: #a0b3e5;
+    font-size: 0.9rem;
+}
+
+.service-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    /*font-weight: 600;*/
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background: #0f6fe5;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5facf6;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #c2d0f5;
+    border: 1px solid #2d5cc4;
+}
+
+.btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-danger {
+    background: #ff4444;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #ff6b6b;
+    transform: translateY(-1px);
+}
+
+.actions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: 6px;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    background: #00C851;
+    color: white;
+}
+
+.alert-error {
+    background: #ff4444;
+    color: white;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .profile-header h1 {
+        font-size: 2rem;
+    }
+
+    .profile-card {
+        padding: 1.5rem;
+    }
+
+    .user-info {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .service-item {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .service-info {
+        justify-content: center;
+    }
+
+    .service-actions {
+        width: 100%;
+        justify-content: center;
+    }
+}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/admin_bookings.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-panel">
+    <div class="admin-header">
+        <h1>Bookings</h1>
+        <div class="admin-breadcrumb">
+            <a href="/">Home</a> / <a href="/admin">Admin Panel</a> /
+            Bookings
+        </div>
+    </div>
+
+    <div class="filters-section">
+        <h2>Filters</h2>
+        <div class="filter-controls">
+            <div class="filter-group">
+                <label for="flightFilter">Flight Number:</label>
+                <input type="text" id="flightFilter" placeholder="Filter by flight number...">
+            </div>
+            <button onclick="applyFilters()" class="apply-btn">
+                <i class="fas fa-filter"></i> Apply Filters
+            </button>
+            <button onclick="clearFilters()" class="clear-btn">
+                <i class="fas fa-times"></i> Clear
+            </button>
+        </div>
+    </div>
+
+    <div class="bookings-list">
+        <h2>Bookings</h2>
+        <div class="bookings-container" id="bookingsContainer">
+
+        </div>
+    </div>
+</div>
+
+<div id="bookingModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Booking Details</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body" id="modalBody">
+
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin_bookings.js"></script>
+{% endblock %}

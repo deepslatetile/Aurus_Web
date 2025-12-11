@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Admin - Aurus</title>
+    <style>
+        .notification-admin {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #0D2064;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1a3185;
+        }
+
+        .stats {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+<div class="notification-admin">
+    <h1>📨 Управление уведомлениями</h1>
+
+    <div class="stats" id="stats">
+        <h3>Статистика</h3>
+        <div>Загрузка...</div>
+    </div>
+
+    <div class="test-section">
+        <h3>🧪 Тестовые уведомления</h3>
+        <button onclick="sendTest('personal')">Отправить себе тест</button>
+        <button onclick="sendTest('broadcast')">Отправить всем тест</button>
+    </div>
+
+    <div class="send-section">
+        <h3>📤 Отправка уведомлений</h3>
+        <form id="sendForm">
+            <div class="form-group">
+                <label>Заголовок:</label>
+                <input type="text" id="title" required>
+            </div>
+            <div class="form-group">
+                <label>Текст:</label>
+                <textarea id="body" rows="3" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Целевая аудитория:</label>
+                <select id="target" onchange="toggleTargetId()">
+                    <option value="all">Все пользователи</option>
+                    <option value="user">Конкретный пользователь</option>
+                    <option value="topic">Тема</option>
+                </select>
+            </div>
+            <div class="form-group" id="targetIdGroup" style="display: none;">
+                <label id="targetIdLabel">ID:</label>
+                <input type="text" id="targetId">
+            </div>
+            <div class="form-group">
+                <label>URL для перехода:</label>
+                <input type="text" id="url" value="/">
+            </div>
+            <button type="submit">Отправить уведомление</button>
+        </form>
+    </div>
+
+    <div id="alerts"></div>
+</div>
+
+<script>
+    function toggleTargetId() {
+        const target = document.getElementById('target').value;
+        const targetIdGroup = document.getElementById('targetIdGroup');
+        const targetIdLabel = document.getElementById('targetIdLabel');
+
+        if (target === 'all') {
+            targetIdGroup.style.display = 'none';
+        } else {
+            targetIdGroup.style.display = 'block';
+            targetIdLabel.textContent = target === 'user' ? 'User ID:' : 'Topic:';
+        }
+    }
+
+    function showAlert(message, type) {
+        const alerts = document.getElementById('alerts');
+        const alert = document.createElement('div');
+        alert.className = `alert ${type}`;
+        alert.textContent = message;
+        alerts.appendChild(alert);
+        setTimeout(() => alert.remove(), 5000);
+    }
+
+    async function sendTest(type) {
+        try {
+            const response = await fetch('/api/push/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({type})
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showAlert(result.message, 'success');
+            } else {
+                showAlert(result.error, 'error');
+            }
+        } catch (error) {
+            showAlert('Ошибка: ' + error.message, 'error');
+        }
+    }
+
+    async function loadStats() {
+        try {
+            const response = await fetch('/api/push/stats');
+            const result = await response.json();
+
+            if (response.ok) {
+                const stats = result.stats;
+                document.getElementById('stats').innerHTML = `
+                        <h3>Статистика</h3>
+                        <div>Всего подписок: ${stats.total_subscriptions}</div>
+                        <div>Уникальных пользователей: ${stats.unique_users}</div>
+                        <div>Активных токенов: ${stats.active_tokens}</div>
+                    `;
+            }
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
+
+    document.getElementById('sendForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = {
+            title: document.getElementById('title').value,
+            body: document.getElementById('body').value,
+            target: document.getElementById('target').value,
+            url: document.getElementById('url').value
+        };
+
+        const targetId = document.getElementById('targetId').value;
+        if (targetId) {
+            formData.target_id = targetId;
+        }
+
+        try {
+            const response = await fetch('/api/push/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showAlert(`✅ ${result.message} (отправлено: ${result.sent_count})`, 'success');
+                document.getElementById('sendForm').reset();
+            } else {
+                showAlert(`❌ ${result.error}`, 'error');
+            }
+        } catch (error) {
+            showAlert('❌ Ошибка: ' + error.message, 'error');
+        }
+    });
+
+    // Загружаем статистику при загрузке страницы
+    loadStats();
+</script>
+</body>
+</html>

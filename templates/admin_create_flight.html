@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/admin_create_flight.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Create New Flight</h1>
+        <div class="admin-breadcrumb">
+            <a href="/">Home</a> / <a href="/admin">Admin Panel</a> / Create Flight
+        </div>
+    </div>
+
+    <div id="adminAlerts"></div>
+
+    <div class="admin-content">
+        <div class="admin-card">
+            <h2>Flight Details</h2>
+            <form id="createFlightForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="flightNumber">Flight Number *</label>
+                        <input type="text" id="flightNumber" name="flight_number" required
+                               placeholder="e.g., AU101">
+                    </div>
+                    <div class="form-group">
+                        <label for="aircraft">Aircraft Type *</label>
+                        <input type="text" id="aircraft" name="aircraft" required
+                               placeholder="e.g., B737-800">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="departure">Departure Airport *</label>
+                        <input type="text" id="departure" name="departure" required
+                               placeholder="e.g., Krasnoyarsk KJA">
+                    </div>
+                    <div class="form-group">
+                        <label for="arrival">Arrival Airport *</label>
+                        <input type="text" id="arrival" name="arrival" required
+                               placeholder="e.g., Moscow DME">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="datetime">Departure Time *</label>
+                        <input type="datetime-local" id="datetime" name="datetime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="enroute">Flight Duration *</label>
+                        <input type="text" id="enroute" name="enroute" required
+                               placeholder="e.g., 1h 30m">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="status">Flight Status *</label>
+                        <div class="combo-input-container">
+                            <select id="status" name="status" required>
+                                <option value="Scheduled">Scheduled</option>
+                                <option value="On time">On time</option>
+                                <option value="Check-In">Check-In</option>
+                                <option value="Boarding">Boarding</option>
+                                <option value="Enroute">Enroute</option>
+                                <option value="Arrived">Arrived</option>
+                                <option value="Delayed">Delayed</option>
+                                <option value="Cancelled">Cancelled</option>
+                                <option value="custom">Custom...</option>
+                            </select>
+                            <input type="text" id="status_custom" name="status_custom"
+                                   placeholder="Enter custom status" style="display: none;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="meal">Meal Service</label>
+                        <div class="combo-input-container">
+                            <select id="meal" name="meal">
+                                <option value="Standard Meal Service">Standard Meal Service</option>
+                                <option value="Drinks Only">Drinks Only</option>
+                                <option value="custom">Custom...</option>
+                            </select>
+                            <input type="text" id="meal_custom" name="meal_custom"
+                                   placeholder="Enter custom meal service" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="seatmap">Seatmap Configuration *</label>
+                        <div class="combo-input-container">
+                            <select id="seatmap" name="seatmap" required>
+                                <option value="">Select or enter custom...</option>
+                            </select>
+                            <input type="text" id="seatmap_custom" name="seatmap_custom"
+                                   placeholder="Enter custom seatmap" style="display: none;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="boarding_pass_default">Boarding Pass Style *</label>
+                        <div class="combo-input-container">
+                            <select id="boarding_pass_default" name="boarding_pass_default" required>
+                                <option value="">Select or enter custom...</option>
+                            </select>
+                            <input type="text" id="boarding_pass_custom" name="boarding_pass_custom"
+                                   placeholder="Enter custom boarding pass style" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="services-header">
+                        <label for="services">Available Services</label>
+                    </div>
+                    <div id="servicesCheckboxes" class="checkboxes-container">
+                        <div class="loading-text">Loading services...</div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="previewBtn" class="btn-secondary">
+                        <i class="fas fa-eye"></i> Preview
+                    </button>
+                    <button type="submit" id="createBtn" class="btn-primary">
+                        <i class="fas fa-plus"></i> Create Flight
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="admin-card" id="previewSection" style="display: none;">
+            <h2>Flight Preview</h2>
+            <div id="flightPreview"></div>
+        </div>
+    </div>
+</div>
+
+<div id="createServiceModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Create New Service</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="createServiceForm">
+                <div class="form-group">
+                    <label for="serviceName">Service Name *</label>
+                    <input type="text" id="serviceName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="serviceDescription">Description</label>
+                    <textarea id="serviceDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="servicePrice">Price ($) *</label>
+                    <input type="number" id="servicePrice" name="price" step="0.01" min="0" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="serviceCategory">Category *</label>
+                    <select id="serviceCategory" name="category" required>
+                        <option value="food">Food & Beverage</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="comfort">Comfort</option>
+                        <option value="premium">Premium Service</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelServiceBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Service</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin_create_flight.js"></script>
+{% endblock %}

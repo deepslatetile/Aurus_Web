@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/admin_phrases.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-phrases-container">
+    <div class="admin-header">
+        <h1>Phrases Management</h1>
+        <div class="admin-breadcrumb">
+            <a href="/">Home</a> / <a href="/admin">Admin Panel</a> /
+            Phrases Management
+        </div>
+    </div>
+
+    <div class="add-phrase-form">
+        <input type="text" id="newPhrase" placeholder="Create new..." maxlength="500">
+        <button class="add-btn" onclick="addPhrase()">
+            <i class="fas fa-plus"></i> Add
+        </button>
+    </div>
+
+    <div class="import-export-actions">
+        <button class="btn btn-secondary" onclick="exportPhrases()">
+            <i class="fas fa-download"></i> Export Phrases
+        </button>
+        <label class="btn btn-secondary file-input-wrapper">
+            <i class="fas fa-upload"></i> Import Phrases
+            <input type="file" id="importFile" accept=".json" onchange="importPhrases(event)">
+        </label>
+        <button class="btn btn-danger" onclick="clearAllPhrases()">
+            <i class="fas fa-trash"></i> Clear All
+        </button>
+    </div>
+
+    <div class="alert-message" id="alertMessage"></div>
+
+    <div id="phrasesContainer">
+        <div class="empty-state" id="emptyState">
+            <i class="fas fa-comment-slash"></i>
+            <h3>Nothing here</h3>
+            <p>Add first with input above</p>
+        </div>
+        <div class="phrases-grid" id="phrasesGrid"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/admin_phrases.js"></script>
+{% endblock %}

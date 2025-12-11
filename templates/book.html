@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/styles/book.css">
+{% endblock %}
+
+{% block content %}
+<div class="booking-container">
+    <h1>Book a Flight</h1>
+
+    <div class="booking-steps">
+        <div class="step active">
+            <div class="step-number">1</div>
+            <div class="step-label">Select Flight</div>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-label">Passenger Info</div>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-label">Select Services</div>
+        </div>
+        <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-label">Choose Seat</div>
+        </div>
+        <div class="step">
+            <div class="step-number">5</div>
+            <div class="step-label">Confirmation</div>
+        </div>
+    </div>
+
+    <div id="step1" class="booking-step active">
+        <h2>Select Your Flight</h2>
+        <div class="flight-selection">
+            <div class="search-box">
+                <input type="text" id="flightSearch" placeholder="Search flights...">
+                <i class="fas fa-search"></i>
+            </div>
+            <div id="flightList" class="flight-list">
+            </div>
+        </div>
+        <div class="step-actions">
+            <button class="btn-primary" onclick="nextStep(2)" disabled id="selectFlightBtn">
+                Select Flight
+            </button>
+        </div>
+    </div>
+
+    <div id="step2" class="booking-step">
+        <h2>Passenger Information</h2>
+        <div class="passenger-form">
+            <div class="form-group">
+                <label for="passengerName">Your name *</label>
+                <input type="text" id="passengerName" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="discordId">Discord ID *</label>
+                    <input type="text" id="discordId" required>
+                </div>
+                <div class="form-group">
+                    <label for="userId">Roblox ID *</label>
+                    <input type="text" id="userId" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="specialRequests">Special Requests</label>
+                <textarea id="specialRequests" rows="3"
+                    placeholder="Any special requests or requirements..."></textarea>
+            </div>
+            <div class="auth-info" id="authInfo" style="display: none;">
+                <p><i class="fas fa-info-circle"></i> You are logged in. You can <a href="#"
+                        onclick="loadProfileInfo()">load
+                        your profile information</a> or enter manually.</p>
+            </div>
+        </div>
+        <div class="step-actions">
+            <button class="btn-secondary" onclick="prevStep(1)">Back</button>
+            <button class="btn-primary" onclick="nextStep(3)">Continue</button>
+        </div>
+    </div>
+
+    <div id="step3" class="booking-step">
+        <h2>Additional Services</h2>
+        <div class="services-selection">
+            <div id="servicesList" class="services-list">
+            </div>
+        </div>
+        <div class="selected-services" id="selectedServices">
+            <h3>Selected Services</h3>
+            <div id="selectedServicesList" class="selected-list">
+                <p class="no-services">No services selected</p>
+            </div>
+        </div>
+        <div class="step-actions">
+            <button class="btn-secondary" onclick="prevStep(2)">Back</button>
+            <button class="btn-primary" onclick="nextStep(4)">Continue</button>
+        </div>
+    </div>
+
+    <div id="step4" class="booking-step">
+        <h2>Choose Your Seat</h2>
+        <div class="seat-selection">
+            <div class="seatmap-container">
+                <div id="seatmap" class="seatmap">
+
+                </div>
+            </div>
+            <div class="seatmap-sidebar">
+                <div class="seatmap-legend">
+                    <div class="legend-item">
+                        <div class="seat available"></div>
+                        <span>Available</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="seat selected seat-selected"></div>
+                        <span>Selected</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="seat occupied"></div>
+                        <span>Occupied</span>
+                    </div>
+                    <div class="class-legend">
+                        <h4>Class Colors:</h4>
+                        <div class="legend-item">
+                            <div class="seat first-class"></div>
+                            <span>First Class</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="seat business-class"></div>
+                            <span>Business Class</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="seat economy-class"></div>
+                            <span>Economy Class</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="seat-info">
+                    <h3>Selected Seat: <span id="selectedSeatDisplay">None</span></h3>
+                    <div id="seatDetails" class="seat-details">
+                        <p>Please select a seat from the map</p>
+                    </div>
+                    <div class="price-info" id="priceInfo" style="display: none;">
+                        <div class="price-amount" id="priceAmount">λu 0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="step-actions">
+            <button class="btn-secondary" onclick="prevStep(3)">Back</button>
+            <button class="btn-primary" onclick="nextStep(5)" disabled id="confirmSeatBtn">
+                Confirm Selection
+            </button>
+        </div>
+    </div>
+
+    <div id="step5" class="booking-step">
+        <h2>Booking Confirmation</h2>
+        <div class="confirmation-summary">
+            <div class="summary-section">
+                <h3>Flight Details</h3>
+                <div id="flightSummary"></div>
+            </div>
+            <div class="summary-section">
+                <h3>Passenger Information</h3>
+                <div id="passengerSummary"></div>
+            </div>
+            <div class="summary-section">
+                <h3>Services</h3>
+                <div id="servicesSummary"></div>
+            </div>
+            <div class="summary-section">
+                <h3>Seat Selection</h3>
+                <div id="seatSummary"></div>
+            </div>
+            <div class="summary-section">
+                <h3>Price Summary</h3>
+                <div id="priceSummary"></div>
+            </div>
+        </div>
+        <div class="step-actions">
+            <button class="btn-secondary" onclick="prevStep(4)">Back</button>
+            <button class="btn-primary" onclick="completeBooking()" id="completeBookingBtn">
+                <i class="fas fa-check"></i> Complete Booking
+            </button>
+        </div>
+    </div>
+
+    <div id="step6" class="booking-step">
+        <h2>Booking Confirmed!</h2>
+        <div class="success-message">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Your booking has been confirmed!</h3>
+            <p>Booking ID: <strong id="bookingIdDisplay"></strong></p>
+        </div>
+
+        <div class="boarding-pass-section">
+            <h3>Download Boarding Pass</h3>
+            <div class="boarding-pass-actions">
+                <button class="btn-primary" onclick="downloadBoardingPass('png')">
+                    <i class="fas fa-download"></i> Download PNG
+                </button>
+                <button class="btn-primary" onclick="downloadBoardingPass('pdf')">
+                    <i class="fas fa-file-pdf"></i> Download PDF
+                </button>
+                <button class="btn-secondary" onclick="generatePreview()">
+                    <i class="fas fa-eye"></i> Generate Preview
+                </button>
+            </div>
+
+            <div id="boardingPassPreview" class="boarding-pass-preview">
+                <div class="preview-placeholder">
+                    <i class="fas fa-ticket-alt"></i>
+                    <p>Click "Generate Preview" to see your boarding pass</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-actions">
+            <button class="btn-secondary" onclick="goToHome()">
+                <i class="fas fa-home"></i> Back to Home
+            </button>
+            <button class="btn-primary" onclick="viewMyBookings()">
+                <i class="fas fa-list"></i> View My Bookings
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/book.js"></script>
+{% endblock %}

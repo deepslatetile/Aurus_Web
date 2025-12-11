@@ -1,0 +1,176 @@
+.admin-dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.admin-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.admin-header h1 {
+    color: #fff;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.admin-header p {
+    color: #a0b3e5;
+    font-size: 1rem;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.admin-card {
+    background: linear-gradient(135deg, #0d2064 0%, #113c96 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #1e4db3;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.admin-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.card-icon {
+    font-size: 2.5rem;
+    color: #5facf6;
+    margin-bottom: 1rem;
+}
+
+.admin-card h3 {
+    color: #fff;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.admin-card p {
+    color: #c2d0f5;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 20px;
+    background: #0f6fe5;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    /*font-weight: 600;*/
+    transition: background 0.3s ease;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.btn:hover {
+    background: #5facf6;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #c2d0f5;
+    border: 1px solid #2d5cc4;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.flight-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.flight-edit-form input {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #2d5cc4;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.flight-edit-form input::placeholder {
+    color: #8fa3d8;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .admin-dashboard {
+        padding: 0.5rem;
+    }
+
+    .admin-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .admin-card {
+        padding: 1.25rem;
+    }
+
+    .admin-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .card-icon {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-dashboard {
+        padding: 0.25rem;
+    }
+
+    .admin-card {
+        padding: 1rem;
+    }
+
+    .admin-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .admin-header p {
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 320px) {
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-card {
+        min-height: auto;
+    }
+
+    .card-icon {
+        font-size: 1.75rem;
+    }
+}

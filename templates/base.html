@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="theme-color" content="#0D2064" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Aurus">
+    <link rel="apple-touch-icon" href="/static/images/icon-192x192.png">
+    <title>Aurus</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/styles/base.css">
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+<header class="header">
+    <div class="container">
+        <nav class="nav-container">
+            <div class="logo">
+                <a href="/">
+                    <img class="header_img" src="/static/images/logo_white.png" alt="Aurus">
+                    <img class="header_img header_img_mobile" src="/static/images/logo_white_square.png" alt="Aurus">
+                </a>
+            </div>
+
+
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <ul class="nav-menu" id="navMenu">
+
+            </ul>
+
+            <div class="auth-buttons" id="authButtons">
+
+            </div>
+
+
+            <div class="mobile-dropdown" id="mobileDropdown">
+                <ul class="mobile-dropdown-menu" id="mobileDropdownMenu">
+
+                </ul>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <p>&copy; 2025 Aurus. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="/tos">Terms of service</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+        </div>
+        <a style="opacity: 0;" href="/admin">admin panel</a>
+    </div>
+</footer>
+
+<script src="/static/js/base.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then((registration) => {
+      console.log('Service Worker зарегистрирован успешно:', registration);
+    })
+    .catch((error) => {
+      console.log('Ошибка регистрации Service Worker:', error);
+    });
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

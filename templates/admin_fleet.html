@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/styles/admin_fleet_team.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fas fa-plane"></i> Fleet Management</h1>
+        <div class="admin-breadcrumb">
+            <a href="/">Home</a> / <a href="/admin">Admin Panel</a> / Fleet Management
+        </div>
+    </div>
+
+    <div id="adminAlerts"></div>
+
+    <div class="admin-content">
+        <div class="admin-actions">
+            <button id="addAircraftBtn" class="btn-primary">
+                <i class="fas fa-plus"></i> Add New Aircraft
+            </button>
+            <button id="refreshBtn" class="btn-secondary">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+        <div class="admin-card">
+            <h2>Aircraft List</h2>
+            <div class="table-container">
+                <table id="fleetTable">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Registration</th>
+                        <th>Capacity</th>
+                        <th>First Flight</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="fleetTableBody">
+                    <tr>
+                        <td colspan="7" class="loading-cell">
+                            <i class="fas fa-spinner fa-spin"></i> Loading aircraft data...
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="aircraftModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add New Aircraft</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="aircraftForm">
+                <input type="hidden" id="aircraftId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="aircraftName">Aircraft Name *</label>
+                        <input type="text" id="aircraftName" name="name" required placeholder="e.g., Boeing 737-800">
+                    </div>
+                    <div class="form-group">
+                        <label for="fleetType">Aircraft Type *</label>
+                        <select id="fleetType" name="fleet_type" required>
+                            <option value="">Select type</option>
+                            <option value="narrow-body">Narrow-Body</option>
+                            <option value="wide-body">Wide-Body</option>
+                            <option value="regional">Regional</option>
+                            <option value="cargo">Cargo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="registrationNumber">Registration Number *</label>
+                        <input type="text" id="registrationNumber" name="registration_number" required
+                               placeholder="e.g., VP-BIA">
+                    </div>
+                    <div class="form-group">
+                        <label for="capacity">Passenger Capacity *</label>
+                        <input type="number" id="capacity" name="capacity" required
+                               placeholder="e.g., 189" min="1" max="1000">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstFlight">First Flight Year</label>
+                        <input type="number" id="firstFlight" name="first_flight"
+                               placeholder="e.g., 2018" min="1900" max="2030">
+                    </div>
+                    <div class="form-group">
+                        <label for="displayOrder">Display Order</label>
+                        <input type="number" id="displayOrder" name="display_order"
+                               placeholder="Order in list" value="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="aircraftDescription">Description</label>
+                    <textarea id="aircraftDescription" name="description" rows="4"
+                              placeholder="Describe the aircraft features, configuration, etc."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="aircraftImage">Image URL</label>
+                    <input type="text" id="aircraftImage" name="image"
+                           placeholder="URL to aircraft image">
+                </div>
+
+                <div class="form-group">
+                    <label for="aircraftStatus">Status</label>
+                    <select id="aircraftStatus" name="is_active">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive/Maintenance</option>
+                    </select>
+                </div>
+
+                <input type="hidden" name="about_group" value="fleet">
+                <input type="hidden" name="subgroup" value="aircraft">
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelAircraftBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Aircraft</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin_fleet.js"></script>
+{% endblock %}

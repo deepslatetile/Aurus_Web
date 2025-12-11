@@ -1,0 +1,30 @@
+
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/tos.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1 id="pageTitle">Terms of Service</h1>
+        <div class="page-meta">
+            <span id="lastUpdated">Last updated: Loading...</span>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <div id="pageContent" class="content-loading">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading content...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/tos.js"></script>
+{% endblock %}

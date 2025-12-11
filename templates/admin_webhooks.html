@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/styles/admin_webhooks.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fab fa-discord"></i> Discord Webhooks Manager</h1>
+        <div class="admin-breadcrumb">
+            <a href="/">Home</a> / <a href="/admin">Admin Panel</a> / Discord Webhooks
+        </div>
+    </div>
+
+    <div id="adminAlerts"></div>
+
+    <div class="admin-content">
+        <div class="admin-card">
+            <div class="card-header-with-icon">
+                <i class="fas fa-link"></i>
+                <h2>Webhook Configuration</h2>
+            </div>
+
+            <div class="form-group">
+                <label for="webhookUrl">Discord Webhook URL *</label>
+                <div class="input-with-help">
+                    <input type="url" id="webhookUrl" placeholder="https://discord.com/api/webhooks/..."
+                           pattern="https://discord\.com/api/webhooks/.*" required>
+                    <div class="help-tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltip-text">
+                            Get this URL from Discord: Server Settings → Integrations → Webhooks → New Webhook
+                        </span>
+                    </div>
+                </div>
+                <small class="form-hint">Keep this secret! Anyone with this URL can send messages to your
+                    Discord.</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="webhookName">Webhook Display Name</label>
+                    <input type="text" id="webhookName" placeholder="Flight System Notifications"
+                           maxlength="80">
+                </div>
+                <div class="form-group">
+                    <label for="pingRole">Role to Ping (Optional)</label>
+                    <div class="input-with-help">
+                        <input type="text" id="pingRole" placeholder="@pilots or &lt;@&amp;1234567890&gt;"
+                               maxlength="100">
+                        <div class="help-tooltip">
+                            <i class="fas fa-question-circle"></i>
+                            <span class="tooltip-text">
+                                Enter role mention like @pilots<br>
+                                Or use role ID format: &lt;@&amp;ROLE_ID&gt;<br>
+                                Leave empty for no ping
+                            </span>
+                        </div>
+                    </div>
+                    <small class="form-hint">Use @mention or role ID format</small>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" id="testWebhookBtn" class="btn-secondary">
+                    <i class="fas fa-vial"></i> Test Connection
+                </button>
+                <button type="button" id="saveWebhookBtn" class="btn-primary">
+                    <i class="fas fa-save"></i> Save Configuration
+                </button>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="card-header-with-icon">
+                <i class="fas fa-envelope"></i>
+                <h2>Message Builder</h2>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="messageTitle">Embed Title *</label>
+                    <input type="text" id="messageTitle" placeholder="New Flight Created"
+                           maxlength="256" required>
+                </div>
+                <div class="form-group">
+                    <label for="messageColor">Embed Color</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="messageColor" value="#5865F2">
+                        <span id="colorValue">#5865F2</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="messageDescription">Embed Description *</label>
+                <textarea id="messageDescription" rows="4"
+                          placeholder="Enter the main message content here..."
+                          maxlength="4096" required></textarea>
+                <div class="char-counter">
+                    <span id="descCharCount">0</span>/4096 characters
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="authorName">Author Name</label>
+                    <input type="text" id="authorName" placeholder="Flight System"
+                           maxlength="256">
+                </div>
+                <div class="form-group">
+                    <label for="authorIcon">Author Icon URL</label>
+                    <input type="url" id="authorIcon"
+                           placeholder="https://example.com/icon.png">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="footerText">Footer Text</label>
+                    <input type="text" id="footerText" placeholder="Flight System v1.0"
+                           maxlength="2048">
+                </div>
+                <div class="form-group">
+                    <label for="footerIcon">Footer Icon URL</label>
+                    <input type="url" id="footerIcon"
+                           placeholder="https://example.com/footer.png">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="thumbnailUrl">Thumbnail URL</label>
+                <input type="url" id="thumbnailUrl"
+                       placeholder="https://example.com/thumbnail.jpg">
+            </div>
+
+            <div class="form-group">
+                <label for="imageUrl">Large Image URL</label>
+                <input type="url" id="imageUrl"
+                       placeholder="https://example.com/image.jpg">
+            </div>
+
+            <div class="form-group">
+                <div class="section-header">
+                    <h3>Embed Fields</h3>
+                    <button type="button" id="addFieldBtn" class="btn-small">
+                        <i class="fas fa-plus"></i> Add Field
+                    </button>
+                </div>
+                <div id="embedFieldsContainer">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" id="previewMessageBtn" class="btn-secondary">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button type="button" id="sendMessageBtn" class="btn-primary">
+                    <i class="fas fa-paper-plane"></i> Send Message
+                </button>
+            </div>
+        </div>
+
+        <div class="admin-card" id="previewCard" style="display: none;">
+            <div class="card-header-with-icon">
+                <i class="fas fa-desktop"></i>
+                <h2>Preview</h2>
+            </div>
+            <div id="embedPreview">
+
+            </div>
+            <div class="ping-preview" id="pingPreview" style="display: none;">
+                <strong>Role Ping:</strong> <span id="pingPreviewText"></span>
+            </div>
+            <div class="preview-note">
+                <i class="fas fa-info-circle"></i>
+                This is an approximation. Actual appearance in Discord may vary.
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="card-header-with-icon">
+                <i class="fas fa-bolt"></i>
+                <h2>Quick Templates</h2>
+            </div>
+            <div class="templates-grid">
+                <div class="template-item" data-template="flight_created">
+                    <div class="template-icon">
+                        <i class="fas fa-plane"></i>
+                    </div>
+                    <h4>Flight Created</h4>
+                    <p>New flight schedule notification</p>
+                    <button type="button" class="btn-small btn-outline use-template-btn">
+                        Use Template
+                    </button>
+                </div>
+                <div class="template-item" data-template="booking_confirmed">
+                    <div class="template-icon">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <h4>Booking Confirmed</h4>
+                    <p>New booking notification</p>
+                    <button type="button" class="btn-small btn-outline use-template-btn">
+                        Use Template
+                    </button>
+                </div>
+                <div class="template-item" data-template="payment_received">
+                    <div class="template-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h4>Payment Received</h4>
+                    <p>Successful payment notification</p>
+                    <button type="button" class="btn-small btn-outline use-template-btn">
+                        Use Template
+                    </button>
+                </div>
+                <div class="template-item" data-template="system_alert">
+                    <div class="template-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h4>System Alert</h4>
+                    <p>Important system notification</p>
+                    <button type="button" class="btn-small btn-outline use-template-btn">
+                        Use Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="fieldModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Field</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="fieldForm">
+                <div class="form-group">
+                    <label for="fieldName">Field Name *</label>
+                    <input type="text" id="fieldName" required maxlength="256">
+                </div>
+                <div class="form-group">
+                    <label for="fieldValue">Field Value *</label>
+                    <textarea id="fieldValue" rows="3" required maxlength="1024"></textarea>
+                    <div class="char-counter">
+                        <span id="fieldValueCharCount">0</span>/1024 characters
+                    </div>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="fieldInline">
+                        <div class="checkbox-custom"></div>
+                        <span>Inline (display next to other fields)</span>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Field</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin_webhooks.js"></script>
+{% endblock %}

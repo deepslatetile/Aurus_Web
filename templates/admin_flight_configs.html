@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/admin_flight_configs.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-panel">
+    <div class="admin-header">
+        <h1>Flight configs</h1>
+        <div class="admin-breadcrumb">
+            <a href="/">Home</a> / <a href="/admin">Admin Panel</a> /
+            Flight configs
+        </div>
+    </div>
+
+    <div class="admin-controls">
+        <button class="btn-primary" onclick="showCreateModal()">
+            <i class="fas fa-plus"></i> Create New Config
+        </button>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search configs...">
+            <i class="fas fa-search"></i>
+        </div>
+    </div>
+
+    <div class="config-types">
+        <button class="type-btn active" data-type="all">All Configs</button>
+        <button class="type-btn" data-type="cabin_layout">Cabin Layouts</button>
+        <button class="type-btn" data-type="service">Services</button>
+        <button class="type-btn" data-type="boarding_style">Boarding Styles</button>
+    </div>
+
+    <div class="configs-grid" id="configsGrid">
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading flight configs...</p>
+        </div>
+    </div>
+</div>
+
+<div id="configModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Create Flight Config</h3>
+            <span class="close" onclick="closeModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="configForm">
+                <input type="hidden" id="configId">
+                <div class="form-group">
+                    <label for="configName">Name *</label>
+                    <input type="text" id="configName" required>
+                </div>
+                <div class="form-group">
+                    <label for="configType">Type *</label>
+                    <select id="configType" required>
+                        <option value="">Select type...</option>
+                        <option value="cabin_layout">Cabin Layout</option>
+                        <option value="service">Service</option>
+                        <option value="boarding_style">Boarding Style</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="configDescription">Description</label>
+                    <textarea id="configDescription" rows="3"></textarea>
+                </div>
+
+                <div id="boardingStyleFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="drawFunction">Draw Function *</label>
+                        <select id="drawFunction" required>
+                            <option value="">Select function...</option>
+                            <option value="default">Default</option>
+                            <option value="custom">Custom Function</option>
+                        </select>
+                        <div class="form-hint">Python функция для рисования талона</div>
+                    </div>
+                    <div id="customFunctionGroup" class="form-group" style="display: none;">
+                        <label for="customFunction">Custom Function Name *</label>
+                        <input type="text" id="customFunction" placeholder="my_custom_style">
+                        <div class="form-hint">Название .py файла в папке /bp_styles/ (без расширения .py)</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="backgroundImage">Background Image</label>
+                        <input type="text" id="backgroundImage" placeholder="image.png">
+                        <div class="form-hint">Название файла .png из папки /bp_styles/</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="backgroundUrl">Background URL</label>
+                        <input type="url" id="backgroundUrl" placeholder="https://example.com/image.png">
+                        <div class="form-hint">Или URL внешней картинки</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="configData">Data (JSON) *</label>
+                    <textarea id="configData" rows="10" required placeholder='{"key": "value"}'></textarea>
+                    <div class="form-hint">Enter valid JSON data for this configuration</div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn-primary" onclick="saveConfig()" id="saveConfigBtn">
+                <i class="fas fa-save"></i> Save Config
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirm Delete</h3>
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete config "<span id="deleteConfigName"></span>"?</p>
+            <p class="text-warning">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-danger" onclick="confirmDelete()">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin_flight_configs.js"></script>
+{% endblock %}

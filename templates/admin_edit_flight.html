@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/admin_edit_flight.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Edit Flight</h1>
+        <div class="admin-breadcrumb">
+            <a href="/">Home</a> / <a href="/admin">Admin Panel</a> /
+            Edit Flight
+        </div>
+    </div>
+
+    <div id="adminAlerts"></div>
+
+    <div class="admin-content">
+        <div class="admin-card">
+            <h2>Flight Details</h2>
+            <form id="editFlightForm">
+                <input type="hidden" id="flightId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="flightNumber">Flight Number *</label>
+                        <input type="text" id="flightNumber" name="flight_number" required
+                               placeholder="e.g., AU101">
+                    </div>
+                    <div class="form-group">
+                        <label for="aircraft">Aircraft Type *</label>
+                        <input type="text" id="aircraft" name="aircraft" required
+                               placeholder="e.g., B737-800">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="departure">Departure Airport *</label>
+                        <input type="text" id="departure" name="departure" required
+                               placeholder="e.g., Krasnoyarsk KJA">
+                    </div>
+                    <div class="form-group">
+                        <label for="arrival">Arrival Airport *</label>
+                        <input type="text" id="arrival" name="arrival" required
+                               placeholder="e.g., Moscow DME">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="datetime">Departure Time *</label>
+                        <input type="datetime-local" id="datetime" name="datetime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="enroute">Flight Duration *</label>
+                        <input type="text" id="enroute" name="enroute" required
+                               placeholder="e.g., 1h 30m">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="status">Flight Status *</label>
+                        <div class="combo-input-container">
+                            <select id="status" name="status" required>
+                                <option value="Scheduled">Scheduled</option>
+                                <option value="On time">On time</option>
+                                <option value="Check-In">Check-In</option>
+                                <option value="Boarding">Boarding</option>
+                                <option value="Enroute">Enroute</option>
+                                <option value="Arrived">Arrived</option>
+                                <option value="Delayed">Delayed</option>
+                                <option value="Cancelled">Cancelled</option>
+                                <option value="custom">Custom...</option>
+                            </select>
+                            <input type="text" id="status_custom" name="status_custom"
+                                   placeholder="Enter custom status" style="display: none;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="meal">Meal Service</label>
+                        <div class="combo-input-container">
+                            <select id="meal" name="meal">
+                                <option value="Standard Meal Service">Standard Meal Service</option>
+                                <option value="Premium Meal Service">Premium Meal Service</option>
+                                <option value="No Meal Service">No Meal Service</option>
+                                <option value="Vegetarian Meal">Vegetarian Meal</option>
+                                <option value="custom">Custom...</option>
+                            </select>
+                            <input type="text" id="meal_custom" name="meal_custom"
+                                   placeholder="Enter custom meal service" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="seatmap">Seatmap Configuration *</label>
+                        <div class="combo-input-container">
+                            <select id="seatmap" name="seatmap" required>
+                                <option value="">Select or enter custom...</option>
+                            </select>
+                            <input type="text" id="seatmap_custom" name="seatmap_custom"
+                                   placeholder="Enter custom seatmap" style="display: none;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="boarding_pass_default">Boarding Pass Style *</label>
+                        <div class="combo-input-container">
+                            <select id="boarding_pass_default" name="boarding_pass_default" required>
+                                <option value="">Select boarding pass style...</option>
+                            </select>
+                            <input type="text" id="boarding_pass_custom" name="boarding_pass_custom"
+                                   placeholder="Enter custom boarding pass style" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="services-header">
+                        <label for="services">Available Services</label>
+                    </div>
+                    <div id="servicesCheckboxes" class="checkboxes-container">
+                        <div class="loading-text">Loading services...</div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="previewBtn" class="btn-secondary">
+                        <i class="fas fa-eye"></i> Preview
+                    </button>
+                    <button type="button" id="deleteBtn" class="btn-danger">
+                        <i class="fas fa-trash"></i> Delete Flight
+                    </button>
+                    <button type="submit" id="updateBtn" class="btn-primary">
+                        <i class="fas fa-save"></i> Update Flight
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="admin-card" id="previewSection" style="display: none;">
+            <h2>Flight Preview</h2>
+            <div id="flightPreview"></div>
+        </div>
+    </div>
+</div>
+
+<div id="deleteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirm Delete</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete flight "<span id="deleteFlightNumber"></span>"?</p>
+            <p class="text-warning">This action cannot be undone. All bookings for this flight will be lost.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" id="cancelDeleteBtn">Cancel</button>
+            <button type="button" class="btn-danger" id="confirmDeleteBtn">
+                <i class="fas fa-trash"></i> Delete Flight
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin_edit_flight.js"></script>
+{% endblock %}

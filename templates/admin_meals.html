@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/admin_meals.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fas fa-utensils"></i> Meals Management</h1>
+        <div class="admin-breadcrumb">
+            <a href="/">Home</a> / <a href="/admin">Admin Panel</a> / Meals
+        </div>
+    </div>
+
+    <div id="adminAlerts"></div>
+
+    <div class="admin-controls">
+        <button class="btn-primary" onclick="showAddMealForm()">
+            <i class="fas fa-plus"></i> Add New Meal
+        </button>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search meals...">
+            <i class="fas fa-search"></i>
+        </div>
+    </div>
+
+    <div id="mealForm" class="admin-card" style="display: none;">
+        <h2 id="formTitle">Add New Meal</h2>
+        <form id="mealFormElement">
+            <input type="hidden" id="mealId">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="serve_class">Service Class *</label>
+                    <input type="text" id="serve_class" required
+                           placeholder="Enter service class (e.g., Economy, Business, First, Seasonal)">
+                </div>
+
+                <div class="form-group">
+                    <label for="serve_time">Serve Time *</label>
+                    <input type="text" id="serve_time" required
+                           placeholder="Enter serve time (e.g., breakfast, lunch, dinner, snack)">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Meal Name *</label>
+                <input type="text" id="name" required placeholder="Enter meal name">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" rows="3" placeholder="Enter meal description"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="image">Image URL</label>
+                <input type="url" id="image" placeholder="https://example.com/image.jpg">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Save Meal
+                </button>
+                <button type="button" class="btn-secondary" onclick="hideMealForm()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="admin-card">
+        <h2>Current Menu</h2>
+        <div class="filters">
+            <select id="classFilter" onchange="filterMeals()">
+                <option value="">All Classes</option>
+            </select>
+            <select id="timeFilter" onchange="filterMeals()">
+                <option value="">All Times</option>
+            </select>
+        </div>
+
+        <div class="meals-grid" id="mealsGrid">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading meals...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirm Delete</h3>
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete meal "<span id="deleteMealName"></span>"?</p>
+            <p class="text-warning">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-danger" onclick="confirmDelete()">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin_meals.js"></script>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/styles/admin_users.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-panel">
+    <div class="admin-header">
+        <h1>Users Management</h1>
+        <div class="admin-breadcrumb">
+            <a href="/">Home</a> / <a href="/admin">Admin Panel</a> /
+            Users
+        </div>
+    </div>
+
+    <div class="stats-section">
+        <h2>User Statistics</h2>
+        <div class="stats-grid" id="statsGrid">
+            <div class="loading">Loading statistics...</div>
+        </div>
+    </div>
+
+    <div class="filters-section">
+        <h2>Filters</h2>
+        <div class="filter-controls">
+            <div class="filter-group">
+                <label for="searchFilter">Search:</label>
+                <input type="text" id="searchFilter" placeholder="Search by nickname or virtual ID...">
+            </div>
+            <div class="filter-group">
+                <label for="groupFilter">User Group:</label>
+                <select id="groupFilter">
+                    <option value="">All Groups</option>
+                    <option value="HQ">HQ</option>
+                    <option value="STF">Staff</option>
+                    <option value="PAX">Passenger</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <button onclick="loadUsers()" class="apply-btn">
+                <i class="fas fa-filter"></i> Apply Filters
+            </button>
+            <button onclick="clearFilters()" class="clear-btn">
+                <i class="fas fa-times"></i> Clear
+            </button>
+        </div>
+    </div>
+
+    <div class="users-list">
+        <div class="list-header">
+            <h2>Users</h2>
+            <button onclick="showCreateUserModal()" class="create-btn">
+                <i class="fas fa-plus"></i> Create User
+            </button>
+        </div>
+        <div class="users-container" id="usersContainer">
+            <div class="loading">Loading users...</div>
+        </div>
+        <div class="pagination" id="pagination">
+
+        </div>
+    </div>
+</div>
+
+
+<div id="userModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>User Details</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body" id="modalBody">
+        </div>
+    </div>
+</div>
+
+<div id="createUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Create New User</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="createUserForm">
+                <div class="form-group">
+                    <label for="createNickname">Nickname *</label>
+                    <input type="text" id="createNickname" name="nickname" required>
+                </div>
+                <div class="form-group">
+                    <label for="createPassword">Password *</label>
+                    <input type="password" id="createPassword" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="createUserGroup">User Group *</label>
+                    <select id="createUserGroup" name="user_group" required>
+                        <option value="PAX">Passenger</option>
+                        <option value="STF">Staff</option>
+                        <option value="HQ">HQ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="createSubgroup">Subgroup *</label>
+                    <input type="text" id="createSubgroup" name="subgroup" required>
+                </div>
+                <div class="form-group">
+                    <label for="createVirtualId">Virtual ID</label>
+                    <input type="number" id="createVirtualId" name="virtual_id">
+                </div>
+                <div class="form-group">
+                    <label for="createSocialId">Social ID</label>
+                    <input type="number" id="createSocialId" name="social_id">
+                </div>
+                <div class="form-group">
+                    <label for="createStatus">Status</label>
+                    <select id="createStatus" name="status">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closeCreateUserModal()">Cancel</button>
+                    <button type="submit" class="save-btn">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin_users.js"></script>
+{% endblock %}

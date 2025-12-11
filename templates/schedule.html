@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/schedule.css">
+{% endblock %}
+
+{% block content %}
+<div class="schedule-container">
+    <h1>Flight Schedule</h1>
+    <div class="schedule-controls">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search flights...">
+            <i class="fas fa-search"></i>
+        </div>
+    </div>
+
+    <div id="scheduleList" class="schedule-list">
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/schedule.js"></script>
+{% endblock %}

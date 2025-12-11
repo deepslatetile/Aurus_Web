@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/styles/profile.css">
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>User Profile</h1>
+        <div id="profileAlerts">
+            {% if request.args.get('success') %}
+            <div class="alert alert-success">
+                {% if request.args.get('success') == 'discord_linked' %}
+                ✅ Discord account successfully linked!
+                {% elif request.args.get('success') == 'roblox_linked' %}
+                ✅ Roblox account successfully linked! Virtual ID updated.
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if request.args.get('error') %}
+            <div class="alert alert-error">
+                {% if request.args.get('error') == 'discord_already_linked' %}
+                ❌ This Discord account is already linked to another user
+                {% elif request.args.get('error') == 'discord_auth_failed' %}
+                ❌ Discord authentication failed
+                {% elif request.args.get('error') == 'discord_not_configured' %}
+                ❌ Discord OAuth is not configured on the server
+                {% elif request.args.get('error') == 'discord_no_code' %}
+                ❌ Discord authorization code not provided
+                {% elif request.args.get('error') == 'discord_unexpected_error' %}
+                ❌ An unexpected error occurred
+                {% elif request.args.get('error') == 'roblox_already_linked' %}
+                ❌ This Roblox account is already linked to another user
+                {% elif request.args.get('error') == 'roblox_auth_failed' %}
+                ❌ Roblox authentication failed
+                {% elif request.args.get('error') == 'roblox_not_configured' %}
+                ❌ Roblox OAuth is not configured on the server
+                {% elif request.args.get('error') == 'roblox_no_code' %}
+                ❌ Roblox authorization code not provided
+                {% elif request.args.get('error') == 'roblox_no_user_id' %}
+                ❌ Could not get Roblox User ID
+                {% elif request.args.get('error') == 'roblox_unexpected_error' %}
+                ❌ An unexpected error occurred
+                {% else %}
+                ❌ An error occurred
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="profile-content">
+        <div class="profile-card">
+            <h2>Account Information</h2>
+            <div class="user-info">
+                <div class="avatar-section">
+                    <div class="avatar" id="userAvatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                <div class="info-section">
+                    <div class="info-item">
+                        <label>Username:</label>
+                        <span id="userUsername">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <label>User ID:</label>
+                        <span id="userId">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Member since:</label>
+                        <span id="userCreatedAt">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Miles:</label>
+                        <span id="userMiles">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <label>User Group:</label>
+                        <span id="userGroup">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <h2>Connected Services</h2>
+            <div class="services-section">
+                <div class="service-item" id="discordService">
+                    <div class="service-info">
+                        <div class="service-icon discord">
+                            <i class="fab fa-discord"></i>
+                        </div>
+                        <div class="service-details">
+                            <h3>Discord</h3>
+                            <p id="discordStatus">Checking connection...</p>
+                            <div id="discordDetails" style="display: none; margin-top: 0.5rem;">
+                                <small style="color: #a0b3e5;">Connected as: <span id="discordUsername" style="color: #fff; font-weight: 500;"></span></small>
+                                <br>
+                                <small style="color: #a0b3e5;">Connected since: <span id="discordConnectedSince" style="color: #fff; font-weight: 500;"></span></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="service-actions">
+                        <a href="/auth/discord" id="discordConnectBtn" class="btn-primary">
+                            <i class="fab fa-discord"></i> Connect Discord
+                        </a>
+                        <button id="discordDisconnectBtn" class="btn-danger" style="display: none;">
+                            <i class="fas fa-unlink"></i> Disconnect
+                        </button>
+                    </div>
+                </div>
+
+                <div class="service-item" id="robloxService">
+                    <div class="service-info">
+                        <div class="service-icon roblox">
+                            <i class="fas fa-gamepad"></i>
+                        </div>
+                        <div class="service-details">
+                            <h3>Roblox</h3>
+                            <p id="robloxStatus">Checking connection...</p>
+                            <div id="robloxDetails" style="display: none; margin-top: 0.5rem;">
+                                <small style="color: #a0b3e5;">Connected as: <span id="robloxUsername" style="color: #fff; font-weight: 500;"></span></small>
+                                <br>
+                                <small style="color: #a0b3e5;">Connected since: <span id="robloxConnectedSince" style="color: #fff; font-weight: 500;"></span></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="service-actions">
+                        <a href="/auth/roblox" id="robloxConnectBtn" class="btn-primary">
+                            <i class="fas fa-gamepad"></i> Connect Roblox
+                        </a>
+                        <button id="robloxDisconnectBtn" class="btn-danger" style="display: none;">
+                            <i class="fas fa-unlink"></i> Disconnect
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <h2>Account Actions</h2>
+            <div class="actions-section">
+                <button class="btn-danger" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/profile.js"></script>
+{% endblock %}
